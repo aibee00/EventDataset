@@ -146,9 +146,12 @@ class EventDataset(Dataset):
 
         area_anno_path = osp.join(store_info_path, 'area_annotation.json')
 
+        # 定义proto的查找表
+        self.proto_table = {}
+
         # Get instance of event info factory
         # self.event_factory = EventInfoFactoryImpl(events_file)  # parse from events.pb
-        self.event_factory = GTEventInfoFactoryImpl(events_file)  # parse from gt
+        self.event_factory = GTEventInfoFactoryImpl(events_file, self.xy)  # parse from gt
 
         # Get instacne of image descriptor
         self.img_descriptor = ImageDescriptor(self.dataset_path)
@@ -164,10 +167,6 @@ class EventDataset(Dataset):
         # Load grid_cameras_map
         with open(grid_cameras_map_path, 'r') as f:
             self.grid_cameras_map = json.load(f)
-
-        # 定义proto的查找表
-        self._proto_table = {}
-
 
     @property
     def events_info(self):
@@ -290,7 +289,7 @@ class EventDataset(Dataset):
         pid = osp.basename(pid_proto_path).split(".")[0]
         if pid not in self.proto_table.keys():
             self.proto_table[pid] = get_location(pid_proto_path)
-        return self._proto_table[pid]
+        return self.proto_table[pid]
 
     
     def create_dataset(self, ):

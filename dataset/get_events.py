@@ -9,11 +9,15 @@
 """
 
 from abc import ABCMeta, abstractmethod
-from proto import store_events_pb2
+import sys
 import os.path as osp
 import json
 import logging
 
+sys.path.append(osp.join(osp.dirname(__file__), '..'))
+sys.path.append(osp.join(osp.dirname(__file__), '../proto'))
+
+from proto import store_events_pb2
 from common import hms2sec, ts_to_string, get_location
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s',)
@@ -48,7 +52,6 @@ class EventInfoFactory(metaclass=ABCMeta):
 
     def __init__(self, events_file):
         self.events_file = events_file
-        self.events_info = self.parse_event_info(events_file)
 
     @abstractmethod
     def parse_event_info(self, events_file):
@@ -102,6 +105,7 @@ class EventInfoFactoryImpl(EventInfoFactory):
 
     def __init__(self, events_file):
         super().__init__(events_file)
+        self.events_info = self.parse_event_info(events_file)
 
     def parse_event_info(self, events_proto_file):
         """ 解析任务信息
@@ -275,7 +279,7 @@ def get_gt_pid_reception(labels):
                         "end_time_bj": ts_to_string(hms2sec(int(float(end_time)))),
                         "score": None,
                         "region_type": REGIONS_TYPE[store_events_pb2.RegionType.STORE], 
-                        "region_id": str(evt["region_id"])
+                        "region_id": str(0)
                     }
                 )
             except:
@@ -321,7 +325,9 @@ class GTEventInfoFactoryImpl(EventInfoFactory):
     
     def __init__(self, gt_events_file, new_xy_path):
         super().__init__(gt_events_file)
+
         self.new_xy_path = new_xy_path
+        self.events_info = self.parse_event_info(gt_events_file)
 
     def _update_events_info(self, events_info, event_type, event_infos):
         """
@@ -362,7 +368,7 @@ class GTEventInfoFactoryImpl(EventInfoFactory):
                 if pid_loc is None:
                     mlog.warning("pid {} not found in new_xy_path {}".format(pid, self.new_xy_path))
                     continue
-                pid_loc = pid_loc[0]
+                pid_loc = pid_loc[pid]
                 ts_vec = sorted(pid_loc["loc"].keys())
                 if len(ts_vec) == 0:
                     mlog.warning("pid {} has no location".format(pid))
@@ -416,7 +422,7 @@ class GTEventInfoFactoryImpl(EventInfoFactory):
 
         # 解析pid_reception
         individual_receptions = get_gt_pid_reception(labels)
-        self._update_events_info(events_info, store_events_pb2.EventType.CAR_INOUT, individual_receptions)
+        self._update_events_info(events_info, store_events_pb2.EventType.INDIVIDUAL_RECEPTION, individual_receptions)
 
         # 解析group
         gt_groups = self.get_gt_groups(labels)
