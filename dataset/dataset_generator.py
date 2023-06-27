@@ -14,26 +14,52 @@ from get_events import EventInfoFactoryImpl, GTEventInfoFactoryImpl, EVENTS_TYPE
 import json
 import shutil
 
-from common import hms2sec, ts_to_string, duration, get_location, logger
+from common import hms2sec, ts_to_string, get_location, get_overlap_time, get_pid_loc_time_range, logger
 
 
 # 给出pid、location和时间段，返回覆盖到该location的所有channels
 def get_cover_channels(grid_cameras_map, pid, loc, time_slice):
-    channels = set()
-    for ts in range(time_slice[0], time_slice[1]):
-        if pid not in loc:
-            continue
-        if ts not in loc[pid]['loc']:
-            continue
+    """ 获取在时间段time_slice内pid所在位置有覆盖的cameras
 
-        location = loc[pid]['loc'][ts]
+    Args:
+        grid_cameras_map: 预先生成的grid to cameras的映射关系
+        pid: 某个人的pid
+        loc: 轨迹文件
+        time_slice: 可以是一段时间[st, et]或一个时刻ts
+    Returns:
+        channels: set of channels
+    """
+    channels = set()
+    if isinstance(time_slice, list):
+        for ts in range(time_slice[0], time_slice[1]):
+            if pid not in loc:
+                continue
+            if ts not in loc[pid]['loc']:
+                continue
+
+            location = loc[pid]['loc'][ts]
+            best_cameras = get_best_camera_views(location, grid_cameras_map)
+            channels.update(set(best_cameras))
+    else:
+        if pid not in loc:
+            return channels
+        if time_slice not in loc[pid]['loc']:
+            return channels
+
+        location = loc[pid]['loc'][time_slice]
         best_cameras = get_best_camera_views(location, grid_cameras_map)
         channels.update(set(best_cameras))
+    
     return channels
 
 
 # 根据开始时间获取时间段
 def get_video_time_range(start_time, offset):
+    """
+    start_time: 开始时间
+    offset: 如[10, 20]
+    :return: tuple(int, int)
+    """
     if isinstance(start_time, str):
         start_time = hms2sec(int(start_time))
     end_time = start_time + offset
@@ -217,7 +243,7 @@ class EventDataset(Dataset):
         return merged_time_covered
 
     # 根据时间，找出在这个时间发生的所有事件
-    def get_events_in_time_slice(self, time_slice, margin=5):
+    def get_events_in_time_slice(self, time_slice, margin=1):
         """
         :time_slice: (start_time, end_time)
         :return: events in time_slice
@@ -282,15 +308,121 @@ class EventDataset(Dataset):
 
 
     # 定义一个_get_location的函数，用以获取location
-    def _get_location(self, pid_proto_path):
+    def _get_location(self, pid, ts=None):
         """ 检查该proto是否已经在proto_table中，如果没有则调用get_location读取
         如果已经在查找表中，则直接返回
         """
-        pid = osp.basename(pid_proto_path).split(".")[0]
+        pid_proto_path = osp.join(self.xy, f"{pid}.pb")
         if pid not in self.proto_table.keys():
             self.proto_table[pid] = get_location(pid_proto_path)
-        return self.proto_table[pid]
+        
+        ret = None
+        if ts is None:
+            ret = self.proto_table[pid]
+        else:
+            ret = self.proto_table[pid][pid]['loc'][ts]
+        
+        return ret
+    
+    def get_valid_ts_set(self, event):
+        """ 获取events的信息，获取事件的有效时间集合
+        
+        :return: (pid_list, valid_ts_set)
+        """
+        pid_list = []
+        valid_ts_set = set()
 
+        event_type = event["event_type"]
+
+        if event_type == "COMPANION":
+            # 如果是批次事件，我们只关注他们同时在店的情况
+            pids = event["pids"]
+            pid_list.extend(pids)
+
+            valid_time_range = (event["start_time"], event["end_time"])
+            for pid in pids:
+                # 获取pid地处的location
+                pic_locs = self._get_location(pid)
+                # 通过pid轨迹的时间段
+                time_slice = get_pid_loc_time_range(pic_locs, pid)
+                # common_time与time_slice的overlap时间段
+                valid_time_range = get_overlap_time(valid_time_range, time_slice)
+            
+            valid_ts_set.update(set(range(*valid_time_range)))
+
+        elif event_type == "STORE_INOUT":
+            # 如果是进出店，这里我们只需关注进店时的一小段时间即可，例如前后5s
+            margin = 5
+            pid_list.append(event["pid"])
+            valid_time_range = (event["start_time"] - margin, event["start_time"] + margin)
+            valid_ts_set.update(set(range(*valid_time_range)))
+
+        else:
+            pid_list.append(event["pid"])
+            valid_time_range = (event["start_time"], event["end_time"])
+            valid_ts_set.update(set(range(*valid_time_range)))
+
+        return pid_list, valid_ts_set
+
+    def _process_per_event(self, event):
+        """ 处理每个事件
+        处理过程:
+            1.根据事件获取有效时刻和有效pid
+            2.根据pid和时刻可以获得位置
+            3.根据位置可以获得有效(有覆盖的)channels
+            4.根据每个时刻ts的有效channels可以获得图片
+            5.根据事件生成图片的描述
+            6.将描述添加到所有channels的图片的描述中
+        """
+        # 1.根据事件获取有效时刻和有效pid
+        valid_pids, valid_ts_set = self.get_valid_ts_set(event)
+
+        # 处理valid_time_ranges中的每个ts
+        for ts in valid_ts_set:
+            for pid in valid_pids:
+                # 2.根据pid和时刻可以获得位置
+                locs = self._get_location(pid)
+
+                # 3.根据位置可以获得有效(有覆盖的)channels
+                channels = get_cover_channels(self.grid_cameras_map, pid, locs, ts)
+                
+                if channels is None:
+                    continue
+
+                # 4.根据每个时刻ts的有效channels可以获得图片
+                imgs = []
+                # bar = tqdm(channels, desc=f"Processing {len(channels)} channels")
+                for channel in channels:
+                    video_dirs = glob(osp.join(self.video_path, "{}_*".format(channel)))
+                    for video_dir in video_dirs:
+                        # logger.info(f"Processing video in: {video_dir}")
+                        ch, time_str = video_dir.split("/")[-1].split("_")
+                        date, time_start = time_str[:-6], time_str[-6:]
+                        v_time_range = get_video_time_range(time_start, offset=5*60)
+
+                        # 如果ts不在该video的时间段内，则跳过
+                        if ts not in set(range(v_time_range[0], v_time_range[1])):
+                            continue
+
+                        ts_hms = ts_to_string(ts, sep="")
+
+                        img_name = f"{ch}_{date}{ts_hms}.jpg"
+                        img_file = osp.join(video_dir, img_name)
+                        if not osp.exists(img_file):
+                            continue
+                        # img = cv2.imread(img_file)
+                        imgs.append(img_file)
+
+                # 将图片注册到descriptor中
+                for img_file in imgs:
+                    img_name = osp.basename(img_file)
+                    self.img_descriptor.register(org_img_path=img_file, img_name=img_name)
+
+                    # 5.根据事件生成图片的描述
+                    description = self.prompt_descriptor.generate_prompt(event)
+
+                    # 6.将描述添加到所有channels的图片的描述中
+                    self.img_descriptor.add_description(img_file, description)
     
     def create_dataset(self, ):
         """ 该函数用于生成dataset对应的imgs和labels
@@ -316,67 +448,10 @@ class EventDataset(Dataset):
 
             # 迭代地获取每个events_in_time_clip的信息
             for event in tqdm(events_in_time_clip, desc=f"[{len(covered_time_clips)}clips]Processing events in each clip"):
-                # 获取events的信息
-                event_type = event["event_type"]
-                if event_type == "COMPANION":
-                    pids = event["pids"]
-                    channels = set()
-                    for pid in pids:
-                        pid_proto_path = osp.join(self.xy, f"{pid}.pb")
-                        # 这里需要优化，每次都要读取浪费时间
+                # 将事件转化为描述添加到各个channels的图片中去
+                self._process_per_event(event)
 
-                        locs = self._get_location(pid_proto_path)
-                        time_slice = (event["start_time"], event["end_time"])
-
-                        # 根据事件中人物所在位置确定需要获取能够覆盖该位置的channels
-                        channels.update(get_cover_channels(self.grid_cameras_map, pid, locs, time_slice))
-                else:
-                    pid = event["pid"]
-                    pid_proto_path = osp.join(self.xy, f"{pid}.pb")
-                    locs = self._get_location(pid_proto_path)
-                    time_slice = (event["start_time"], event["end_time"])
-
-                    # 根据事件中人物所在位置确定需要获取能够覆盖该位置的channels
-                    channels = get_cover_channels(self.grid_cameras_map, pid, locs, time_slice)
-
-                # 获取这段时间内所有channels的图片
-                imgs = []
-                # bar = tqdm(channels, desc=f"Processing {len(channels)} channels")
-                for channel in channels:
-                    video_dirs = glob(osp.join(self.video_path, "{}_*".format(channel)))
-                    for video_dir in video_dirs:
-                        # logger.info(f"Processing video in: {video_dir}")
-                        ch, time_str = video_dir.split("/")[-1].split("_")
-                        date, time_start = time_str[:-6], time_str[-6:]
-                        v_time_range = get_video_time_range(time_start, offset=5*60)
-
-                        # 获取v_time_range和time_slice的overlap时间段
-                        ov_time_range = get_overlap_time_range(v_time_range, time_slice)
-
-                        # 如果video时间段与事件时间段time_slice没有交集则跳过
-                        if ov_time_range is None or duration(ov_time_range) < 5:
-                            continue
-
-                        for ts in range(ov_time_range[0], ov_time_range[1]):
-                            ts = ts_to_string(ts, sep="")
-
-                            img_name = f"{ch}_{date}{ts}.jpg"
-                            img_file = osp.join(video_dir, img_name)
-                            if not osp.exists(img_file):
-                                continue
-                            # img = cv2.imread(img_file)
-                            imgs.append(img_file)
-
-                # 将图片注册到descriptor中
-                for img_file in imgs:
-                    img_name = osp.basename(img_file)
-                    self.img_descriptor.register(org_img_path=img_file, img_name=img_name)
-
-                    # 将事件转化为描述，追加到图片的描述属性中
-                    description = self.prompt_descriptor.generate_prompt(event)
-                    self.img_descriptor.add_description(img_file, description)
-
-        # 报错description标注结果
+        # 报存description标注结果
         self.save_img_descriptions()
 
     def __getitem__(self, index, random=False):
