@@ -1,0 +1,189 @@
+syntax = "proto3";
+
+package tracking_pipeline.online;
+option go_package = "./.gen";
+import "common.proto";
+
+message OnlineEvent {
+    string event_uuid = 1;             // event uuid
+    OnlineEventType event_type = 2;    // event type
+    uint64 begin_time = 3;             // event time
+    uint64 end_time = 4;               // event time
+    uint64 duration = 5;              // seconds
+    repeated Person main_people = 6; // main people for this event
+    repeated Person related_people = 7;          // area
+    repeated OnlineRegion regions = 8;
+    string ref_event_uuid = 9;
+    OnlineEventType ref_event_type = 10;
+    enum OnlineEventStatus {
+        UNKNOWN = 0;
+        RESOLVED = 1;
+        UNRESOLVED = 2;
+        // more status fields here
+    }
+    OnlineEventStatus status = 11; // only for ref events
+    uint32 person_count = 12; // used for area crowd or later for group etc.
+    repeated OnlineDoor doors = 13;
+    enum OnlineEventAlarm {
+        NOALARM = 0;
+        ALARM = 1;
+    }
+    OnlineEventAlarm alarm = 14;
+    uint64 created_time = 15;               // event creation time
+    enum OnlineEventState {
+        INITIALIZED = 0;
+        TIMEOUT = 1;
+        RESUME = 2;
+        COMPLETED = 3;
+    }
+    OnlineEventState state = 16;
+    enum OnlineEventTriggerCause {
+        UNKNOWN_CAUSE = 0;
+        DO_STH_ELSE = 1;
+        STAFF_MISSING_TRACK_UPDATE = 2;
+        CUSTOMER_MISSING_TRACK_UPDATE = 3;
+        STAFF_EXIT_LABELLED_DOOR = 4;
+        CUSTOMER_EXIT_LABELLED_DOOR = 5;
+        CUSTOMER_ENTER_REGION_MINSTAY_TIME = 6;
+        CUSTOMER_ENTER_STORE_MINSTAY_TIME = 7;
+        CUSTOMER_STAFF_INTERACTION_MINSTAY_TIME = 8;
+        // more status fields here
+    }
+    OnlineEventTriggerCause trigger_cause = 17;
+}
+
+enum OnlineEventType {
+    NotDefined = 0;
+    PersonEventStoreIn = 1;
+    PersonEventStoreOut = 2;
+    PersonEventAreaStay = 3;
+    PersonEventLongStay = 4;
+    PersonEventAbnormalStay = 5;
+    PersonEventAngry = 6;
+    PersonEventReception = 7;
+    PersonEventStaffResponse = 8;
+    AreaEventCrowd = 9;
+    AreaEventStaffAbsence = 10;
+    AreaEventStaffLongAbsence = 11;
+    PersonEventEnterRegion = 13;
+    PersonEventEnterStore = 14;
+    PersonEventLongStayStore = 15;
+    PersonEventLongStayRegion = 16;
+    PersonEventStayStore = 17;
+    PersonEventStayRegion = 18;
+    PersonEventLongReception = 19;
+    PersonEventStaffLongAbsence = 20;
+    AreaEventCrowdStore = 21;
+    AreaEventCrowdRegion = 22;
+    PersonEventReceptionUnion = 23;
+    PersonEventUnattended = 24;
+    PersonEventStartReception = 25;
+    PersonEventVisitCounter = 26;
+    PersonEventReceptionResumable = 27;
+    PersonEventStayStoreResumable = 28;
+    PersonEventStayRegionResumable = 29;
+    // new event types here
+}
+message OnlineRegion {
+    string region_id = 1;
+    enum OnlineRegionType {
+        UNKNOWN = 0;
+        STORE = 1;
+        INTERNAL_REGION = 2;
+        DOOR_REGION = 3;
+        UNCOVERED_REGION = 4;
+        VIP_LOUNGE = 5;
+        CASHIER_REGION = 6;
+        CASHIER = 7;
+        COUNTER = 8;
+        CAR = 9;
+        ATM = 10;
+        LARGE_TV = 11;
+        // more regions here if needed
+    }
+    OnlineRegionType region_type = 2;
+}
+message OnlineDoor {
+    string door_in_id = 1;
+    string door_out_id = 2;
+    enum OnlineDoorType {
+        UNKNOWN = 0;
+        FRONT_DOOR = 1;
+        BACK_DOOR = 2;
+        INTERNAL_DOOR = 3;
+        CONNECTOR = 4;
+        // more regions here if needed
+    }
+    OnlineDoorType door_type = 3;
+}
+
+message Person {
+    string tpid = 1;
+    string pid = 2;
+    PersonType type = 3;
+    string cid = 4; // for BE internal usage 
+}
+
+// Counting data message
+message PersonCountType {
+    string                  person_count_type_name = 1; // name this person type specification (e.g., male_adult_customers)
+    repeated PersonType     person_type_include = 2;
+    repeated PersonType     person_type_exclude = 3;
+    repeated Genre          genre_include = 4;
+    repeated Genre          genre_exclude = 5;
+    repeated int32          life_stage_include = 6;
+    repeated int32          life_stage_exclude = 7;
+    repeated UniformStyle   uniform_style_include = 8;
+    repeated UniformStyle   uniform_style_exclude = 9;
+}
+
+message PersonCount {
+    PersonCountType type = 1; // count per person type
+    uint32 number_of_people = 2; // number of people == len(cids)
+    repeated string cids = 3; // assuming cid = pid
+    repeated string pids = 4; // placeholder, assuming cid=pid
+    repeated string tpids = 5; // optional: tpid should not be reported
+}
+
+message RegionStatistics {
+    // old full-solution count messages
+    OnlineRegion region = 1;
+    uint32 number_of_visitors = 2;
+    uint32 avg_stay_time = 3;
+    repeated LocationInfo locations = 4;
+    uint32 total_arrival = 5;
+    uint32 total_departure = 6;
+    uint32 total_unique_arrival = 7;
+    uint32 total_unique_departure = 8;
+    int64 timestamp = 9;
+
+    // medium-solution messages
+    int64 accumulated_stay_time = 10;
+    uint32 number_of_man_visitors = 11;
+    uint32 number_of_woman_visitors = 12;
+    
+    // new(v7.3.1) full-solution count messages
+    uint64 counting_start_time = 13;
+    uint64 counting_end_time = 14;
+    uint64 counting_created_time = 15;
+    OnlineRegion counting_region = 16;
+    repeated PersonCount person_counts = 17;
+  }
+  
+message LocationInfo {
+    string tpid = 1;
+    string pid = 2;
+    Point2D map_pos = 3;
+    int64 timestamp = 4;
+    string cid = 5;
+    bool extrapolated = 6;
+}
+
+message Trajectory {
+    string cid = 1;
+    repeated LocationInfo location_info = 2;
+    PersonType cid_person_type = 3; // make this info readily available for visualization
+    uint64 start_time = 4;
+    uint64 end_time = 5;
+    uint64 sampling_rate = 6; // e.g., at every 1000 msec
+}

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+import "track_pipeline_service.proto";
+import "realtime_meta_data.proto";
+
+package tracking_pipeline.online;
+
+
+service GenericEvent {
+    rpc push_event (Realtime.Meta.RealtimeReply) returns (PiplineResponse) {}
+}

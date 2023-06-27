@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package realtime;
+
+message ForbiddenAreaAlert {
+  // the message id(uuid)
+  string message_uuid = 1;
+  string channel_id = 2;
+  Frame frame = 3;
+  repeated Human human = 4;
+}
+
+message Human {
+  uint32 tracklet_id = 1;
+  uint32 area_no = 2;
+  Box2D body_box = 3;
+  EventType event_type = 4;
+}
+
+message Frame {
+  int32 frame_index = 1;
+  bytes jpeg_data = 2;
+  int32 org_frame_width = 3;
+  int32 org_frame_height = 4;
+  int32 width = 5;
+  int32 height = 6;
+  int64 captured_time = 7;
+}
+
+message Box2D {
+  int32 x = 1;
+  int32 y = 2;
+  int32 w = 3;
+  int32 h = 4;
+}
+
+enum EventType {
+  STEP_OUT = 0;
+  STEP_IN = 1;
+}

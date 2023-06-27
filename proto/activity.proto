@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package tracking_pipeline.online;
+
+enum ActivityType {
+    // Human, start from 0
+    Falling            = 0;
+    Fighting           = 1;
+    CellphoneUsing     = 2;
+    Sleeping           = 3;
+    ScreenPhotoTaking  = 4;
+
+    // Airport, start from 1000
+    WheelBlocking      = 1001;
+}

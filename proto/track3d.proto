@@ -1,0 +1,112 @@
+/* protoc -I=. --cpp_out=. --python_out=. ./tracks3d.proto */
+
+syntax = "proto2";
+
+package tracks3d;
+
+import "version.proto";
+
+message Point2D {
+  optional float x = 1;
+  optional float y = 2;
+}
+
+message Point3D {
+  optional float x = 1;
+  optional float y = 2;
+  optional float z = 3;
+}
+
+message Box3D {
+  optional Point3D top_left = 1;
+  optional Point3D bottom_right = 2;
+}
+
+message Box2D {
+  optional float x = 1;
+  optional float y = 2;
+  optional float w = 3;
+  optional float h = 4;
+}
+
+message CameraProjection {
+  optional int32 id = 1;
+  optional int32 video_index = 2;
+  optional int32 frame_index = 3;
+  optional int32 tracklet_id = 4;
+  optional Box2D box = 5;
+  optional string tracklet_id_str = 6;
+  optional int32 sit_stand = 7;
+}
+
+message CameraStream {
+  optional int32 id = 1;
+  repeated string videos = 2;
+}
+
+message Floor {
+   optional string id = 1;
+   optional string name = 3;
+   optional string image_path = 2;
+}
+
+enum DetectionPostureType {
+  DETECTION_POSTURE_UNKNOWN = 0;
+  DETECTION_POSTURE_STANDING = 1;
+  DETECTION_POSTURE_SEATED = 2;
+}
+
+enum DetectionViewType {
+  DETECTION_VIEW_UNKNOWN = 0;
+  DETECTION_VIEW_FRONT = 1;
+  DETECTION_VIEW_REAR = 2;
+  DETECTION_VIEW_SIDE = 3;
+}
+
+message Track {
+  message Frame {
+    optional int32 frame = 1;
+    optional bool is_multiview = 2;
+    optional Point2D nose_pixels = 3;
+    optional Point3D nose_3d = 4;
+    optional float keypoint_confidence = 5;
+    optional bool good_frame = 6;
+    optional bool good_mask = 7;
+    optional bool good_kp_confidence = 8;
+    optional bool good_distance = 9;
+    optional float distance = 10;
+    optional float timestamp = 11;
+    repeated CameraProjection projections = 12;
+    optional int32 floor_id = 13;
+    optional string floor_name = 14;
+    optional int32 sit_stand = 15;
+    optional string measurement_source = 16;
+    optional Point2D measurement = 17;
+    optional float height_estimate = 18;
+    optional DetectionPostureType detection_posture_type = 19;
+    optional DetectionViewType detection_view_type = 20;
+    optional float head_angle = 21;
+  }
+
+  optional uint32 pid = 1;
+  optional string pid_str = 13;
+  optional int32 did = 12;
+  optional bool any_multiview = 2;
+  optional float mean_height = 3;
+  optional int32 first_frame = 4;
+  optional int32 last_frame = 5;
+  optional int32 n_good_frames = 6;
+  optional int32 first_good_frame = 7;
+  optional int32 last_good_frame = 8;
+  repeated Frame frames = 10;
+  repeated int32 cameras = 11;
+}
+
+message Tracks {
+  repeated Track tracks = 1;
+  repeated CameraStream streams = 2;
+  optional string floor_map = 3;
+  repeated Floor floors = 4;
+  optional tracking_pipeline.ModelVersions model_versions = 5;
+  optional tracking_pipeline.ModuleVersions module_versions = 6;
+}

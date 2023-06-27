@@ -1,0 +1,116 @@
+/* Proto definition for final inference outputs. */
+
+syntax = "proto3";
+
+package tracking_pipeline.inference;
+option go_package = "./.npp";
+
+message AppearanceFeatures {
+    repeated Appearance features = 1;
+    uint32 dim = 2;
+}
+
+message Appearance {
+    repeated float feats = 1;
+}
+
+enum DetectionPostureType {
+    DETECTION_POSTURE_UNKNOWN = 0;
+    DETECTION_POSTURE_STANDING = 1;
+    DETECTION_POSTURE_SEATED = 2;
+}
+
+enum DetectionViewType {
+    DETECTION_VIEW_UNKNOWN = 0;
+    DETECTION_VIEW_FRONT = 1;
+    DETECTION_VIEW_REAR = 2;
+    DETECTION_VIEW_SIDE = 3;
+}
+enum KeyPointType{
+     KEYPOINT_UNKNOWN = 0;
+     KEYPOINT_NOSE = 1;
+     KEYPOINT_L_EYE = 2;
+     KEYPOINT_R_EYE = 3;
+     KEYPOINT_L_EAR = 4;
+     KEYPOINT_R_EAR = 5;
+     KEYPOINT_L_SHOULDER = 6;
+     KEYPOINT_R_SHOULDER =7;
+     KEYPOINT_L_ELBOW = 8;
+     KEYPOINT_R_ELBOW = 9;
+     KEYPOINT_L_WRIST = 10;
+     KEYPOINT_R_WRIST = 11;
+     KEYPOINT_L_HIP = 12;
+     KEYPOINT_R_HIP = 13;
+     KEYPOINT_L_KNEE = 14;
+     KEYPOINT_R_KNEE = 15;
+     KEYPOINT_L_ANKLE = 16;
+     KEYPOINT_R_ANKLE = 17;
+}
+
+message Point2D {
+    float x = 1;
+    float y = 2;
+    bool border = 3;
+
+}
+
+message KeyPoint {
+  Point2D point = 1;
+  float   score = 2;
+  KeyPointType type = 3;
+}
+
+message Track {
+    string                      pid = 1;     // assigned pid
+    repeated SingleViewTrack    single_view_tracks = 2; // single view tracks
+    string                      face_feature_version = 3;
+    string                      appearance_model_url = 4;
+    string                      tracking_version = 5;
+}
+
+message Box2D {
+  float x = 1;
+  float y = 2;
+  float w = 3;
+  float h = 4;
+}
+
+message SingleViewTrack {
+    // basic information
+    string              track_id = 1;       // original sv track id
+    string              mv_linked_id = 2;   // mv track id
+    string              video_name = 3;     // video name in case of offline processing (mostly for viz or pb matching)
+    string              channel = 4;        // camera name
+    repeated Detection  detections = 5;     // all detections
+    bool                invalid = 6;        // reserved
+    // attributes
+    bytes               box_patches = 7;
+    bytes               face_patches = 8;
+    float               face_quality = 9;
+    AppearanceFeatures  body_feature = 10;
+    AppearanceFeatures  face_feature = 11;
+    bytes               head_patches = 12;
+    AppearanceFeatures  head_features = 13;
+    AppearanceFeatures  mask_probs = 14;
+    Box2D               best_face_box = 15;
+    Box2D               origin_best_face_box = 16;
+}
+
+message Detection {
+    // basic information
+    uint32  frame_index = 1; // video frame index
+    float   human_detection_score = 2;
+    int32   human_box_x = 3;
+    int32   human_box_y = 4;
+    int32   human_box_height = 5;
+    int32   human_box_width = 6;
+    uint64  det_time_msec = 7; // detection time in msec
+    Point2D map_pos = 8; // localization in map
+    int32   floor = 9;  // reserved
+
+    // attributes
+    DetectionPostureType    detection_posture_type = 10;
+    repeated KeyPoint       key_points = 11;
+    DetectionViewType       detection_view_type = 12;
+    float head_angle = 13;
+}

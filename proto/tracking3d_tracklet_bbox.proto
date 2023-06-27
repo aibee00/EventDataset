@@ -1,0 +1,15 @@
+syntax="proto2";
+
+package test_proto;
+
+message Tracking3dTrackletResults{
+    map<string, Tracking3dBBoxResults> tracking3d_vt_map = 1; // key => multiview_id   value => {"frame": [box_x, box_y, box_w, box_h, x,y]}
+}
+
+message Tracking3dBBoxResults{
+    map<string, Tracking3dBBoxList> bboxes = 1; //key => frame, value = > [box_x, box_y, box_w, box_h, x,y]
+}
+
+message Tracking3dBBoxList{
+    repeated int32 bb = 1;
+}

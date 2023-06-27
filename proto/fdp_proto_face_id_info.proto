@@ -1,0 +1,31 @@
+/* Proto definition for face id info outputs. */
+
+syntax = "proto3";
+
+package face_pipeline.face_id_info;
+
+message Faces {
+    string                      version = 1;                    // version tag
+    repeated FaceInfo           face_infos = 2;                 // face infos
+    string                      face_feature_version = 3;
+    string                      appearance_feature_version = 4;
+    string                      appearance_model_url = 5;
+    string                      tracking_version = 6;
+    string                      start_date = 7;
+    string                      end_date = 8;
+    string                      customer_city_store = 9;        // customer/city/store like SEPHORA/shanghai/qbwk
+}
+
+message FaceInfo {
+    // basic information
+    string              face_id = 1;            // face id = ptk
+    string              date = 2;               // capture date
+    string              channel = 3;            // camera name
+    string              video_name = 4;         // video name in case of offline processing (mostly for viz or pb matching)
+    uint64              start_time_msec = 5;    // first detected crop time at millisecond
+    uint64              end_time_msec = 6;      // last detected crop time at millisecond
+    float               face_quality = 7;       // face quality
+    int32               gender = 8;             // gender: 0 or 1
+    float               age = 9;                // age: a float number
+    string              pid = 10;               // face pid
+}

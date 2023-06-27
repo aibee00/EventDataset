@@ -1,0 +1,32 @@
+/* Proto definition for store configurations. */
+syntax = "proto3";
+
+package store_config;
+
+enum ProductLine {
+    AUTO = 0;
+    RETAIL = 1;
+    BANK = 2;
+    // next tag 3
+}
+
+enum ProductType {
+    LITE = 0;
+    MEDIUM = 1;
+    FULL = 2;
+    // next tag 3
+}
+
+enum StoreType {
+    REGULAR = 0;
+    AUTO_4S = 1;
+    SHOPPING_MALL = 2;
+    POP_UP = 3;
+    //  next tag 4
+}
+
+enum DeoplymentType {
+    ON_PREMISE = 0;
+    CLOUD = 1;
+    //  next tag 2
+}

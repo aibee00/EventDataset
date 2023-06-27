@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package tracking_pipeline.online;
+option go_package = "./.gen";
+import "common.proto";
+import "online_tracking_results.proto";
+import "event.proto";
+
+service CrossZoneService {
+  rpc InsertZoneData(ZoneDataRequest) returns (ZoneDataResponse);
+}
+
+// Basically identical to EvtProcessRequest, except for the added zone name id
+message ZoneDataRequest {
+  repeated Tracks input_tracks = 1;
+  int64 start_time = 2;
+  int64 end_time = 3;
+  map<string, CidInfo> cid_info = 4;
+  map<string, NppResult> npp_results = 5;
+  string zone = 6;
+}
+
+// Basically identical to EvtProcessResponse for now... It won't be necessary in the future..
+message ZoneDataResponse {
+  map<string, int64> cid_end_time = 1;
+  repeated OnlineEvent events = 2;
+  repeated RegionStatistics region_stats = 3;
+  repeated Trajectory trajectories = 4;
+  repeated RegionStatistics synced_stats = 5;
+  repeated Trajectory synced_trajactories = 6;
+}
+
+// in npp docker call: python -m grpc_tools.protoc -I./ --python_out=./ ./*.proto --grpc_python_out=./

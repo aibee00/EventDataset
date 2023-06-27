@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+import "online_tracking_results.proto";
+
+package tracking_pipeline.online;
+
+message singleview_tracks_results {
+    Tracks tracks = 1;
+    string tracks_pb_path = 2;
+}
+
+service SaveResultsService {
+    rpc savepb (singleview_tracks_results) returns (SaveResultsResponse) {
+    }
+}
+
+message SaveResultsResponse {
+    uint32 code = 1;
+    string message = 2;
+}
+

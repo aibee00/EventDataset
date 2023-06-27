@@ -1,0 +1,363 @@
+/* Proto definition for common components. */
+
+syntax = "proto3";
+
+package tracking_pipeline;
+option go_package = "./.gen";
+enum KeyPointType{
+     KEYPOINT_UNKNOWN = 0;
+     KEYPOINT_NOSE = 1;
+     KEYPOINT_L_EYE = 2;
+     KEYPOINT_R_EYE = 3;
+     KEYPOINT_L_EAR = 4;
+     KEYPOINT_R_EAR = 5;
+     KEYPOINT_L_SHOULDER = 6;
+     KEYPOINT_R_SHOULDER =7;
+     KEYPOINT_L_ELBOW = 8;
+     KEYPOINT_R_ELBOW = 9;
+     KEYPOINT_L_WRIST = 10;
+     KEYPOINT_R_WRIST = 11;
+     KEYPOINT_L_HIP = 12;
+     KEYPOINT_R_HIP = 13;
+     KEYPOINT_L_KNEE = 14;
+     KEYPOINT_R_KNEE = 15;
+     KEYPOINT_L_ANKLE = 16;
+     KEYPOINT_R_ANKLE = 17;
+}
+
+enum PersonType {
+    PERSONTYPE_UNKNOWN = 0;
+    CUSTOMER = 1;
+    BUSINESS_SUIT = 4;
+    CASUAL_SUIT = 5;
+    CLEANER = 6;
+    GUARD = 7;
+    MECHANIC = 8;
+    OTHER_STAFF = 9;
+
+    // These general staff/non-staff types were used before V5.1
+    STAFF = 2;
+    NON_STAFF = 3;
+
+    // Next tag: 10
+}
+
+enum Gender {
+  UNKNOWN_GENDER = 0;
+  FEMALE = 1;
+  MALE = 2;
+}
+
+enum Genre {
+  UNKNOWN = 0;
+  FEM = 1;
+  MA = 2;
+}
+
+enum MainColor {
+  COLOR_UNKNOWN = 0;
+  FUSION = 1;
+  BLACK = 2;
+  WHITE = 3;
+  GRAY = 4;
+  RED = 5;
+  PINK = 6;
+  PURPLE = 7;
+  BLUE = 8;
+  GREEN = 9;
+  YELLOW = 10;
+  ORANGE = 11;
+  BROWN = 12;
+}
+
+enum UniformStyle {
+  UNIFORM_STYLE_UNKNOWN = 0;
+  NOUNIFORM = 1;
+  OTHER_NONUNIFORM = 2;
+  PROTECTIVE_SUIT = 3;
+  DELIVER = 4;
+  TAKE_OUT = 5;
+  JANITOR = 6;
+  SECURITY = 7;
+  COSPLAY = 8;
+}
+
+enum ClotheStyle {
+    CLOTHE_STYLE_UNKNOWN = 0;
+    OTHER_CLOTHSTYLE = 1;
+    SUIT = 2;
+    TSHIRT = 3;
+    SHIRT = 4;
+    SWEATSHIRT = 5;
+    JACKET = 6;
+    VEST = 7;
+    OVERCOAT = 8;
+    SWEATER = 9;
+    JEANS = 10;
+    DRESSES = 11;
+    DOWNJACKET = 12;
+}
+
+enum ClotheLength {
+    CLOTHE_LENGTH_UNKNOWN = 0;
+    LONGSLEEVES = 1;
+    SHORTSLEEVES = 2;
+    SLEEVELESS = 3;
+}
+
+enum PantStyle {
+    PANT_SYTLE_UNKNOWN = 0;
+    OTHER_PANTSTYLE = 1;
+    PANTSUIT = 2;
+    OVERALLS = 3;
+    JEANSPANT = 4;
+    CASUAL = 5;
+    SHORTPANT = 6;
+    SKIRT = 7;
+}
+
+enum PantLength {
+    PANT_LENGTH_UNKNOWN = 0;
+    LONGPANTS = 1;
+    SHORTPANTS = 2;
+}
+
+enum HairStyle {
+    HAIR_STYLE_UNKNOWN = 0;
+    OTHER_HAIRSTYLE = 1;
+    RECEDINGHAIRLINE = 2;
+    BALDTOP = 3;
+    BALD = 4;
+    GROSSINCH = 5;
+    SHORT = 6;
+    MEDIUM = 7;
+    SHAWL = 8;
+    LONG = 9;
+    UPDO = 10;
+    PONYTAIL = 11;
+    TWISTBRAID = 12;
+}
+
+// enum AgeGroup {
+//     AGE_GROUP_UNKNOWN = 0;
+//     INFANT = 1;
+//     CHILD = 2;
+//     TEENAGER = 3;
+//     ADULT = 4;
+//     ELDER = 5;
+// }
+
+enum HatStyle {
+    HAT_STYLE_UNKNOWN = 0;
+    NOHAT = 1;
+    OTHER_HATSTYLE = 2;
+    WOOLEN = 3;
+    BERET = 4;
+    PEAK_CAP = 5;
+    BASEBALL = 6;
+    FLAT_TOP = 7;
+    TOPHAT = 8;
+}
+
+enum ScarfStyle {
+    SCARF_STYLE_UNKNOWN = 0;
+    WITHSCARF = 1;
+    WITHOUTSCARF = 2;
+}
+
+enum BagStyle {
+    BAG_STYLE_UNKNOWN = 0;
+    BAG_NON_INVISIBLE = 1;
+    OTHER_BAGSTYLE = 2;
+    PURSE = 3;
+    HANDBAG = 4;
+    BUMBAG = 5;
+    SHOULDER_BAG = 6;
+    BACKPACK = 7;
+    TRAVELLING_BAG = 8;
+    SUITCASE = 9;
+}
+
+enum ShoeStyle {
+    SHOE_STYLE_UNKNOWN = 0;
+    OTHER_SHOESTYLE = 1;
+    SKATEBOARD = 2;
+    LEISURE_SHOE = 3;
+    SANDAL = 4;
+    SLIPPERS = 5;
+    SHIPSHOE = 6;
+    LEATHER_SHOE = 7;
+    HIGHHEELED = 8;
+    ANKLE_BOOT = 9;
+    LONG_BOOT = 10;
+}
+
+message Point2D {
+    float x = 1;
+    float y = 2;
+    bool border = 3;
+
+}
+
+message Point3D {
+    float x = 1;
+    float y = 2;
+    float z = 3;
+}
+
+message KeyPoint {
+  Point2D point = 1;
+  float   score = 2;
+  KeyPointType type = 3;
+  Point3D point_3d = 4;
+  float score_3d = 5;
+}
+
+message CameraIds {
+  repeated string id = 1;
+}
+
+message AppearanceFeatures {
+  repeated Appearance features = 1;
+  uint32 dim = 2;
+}
+
+message Appearance {
+  repeated float feats = 1;
+}
+
+message HOGPerDetection {
+  repeated GridHOG grid_hog = 1;
+  uint32 frame_index = 2;
+}
+
+message GridHOG {
+  repeated float hog_descriptor = 1;
+  uint32 horizontal_index = 2;
+  uint32 vertical_index = 3;
+}
+
+message Boxes {
+  repeated Box2D box = 1;
+}
+
+message Box2D {
+  float x = 1;
+  float y = 2;
+  float w = 3;
+  float h = 4;
+}
+
+message Box_UUID {
+  string value = 1;
+}
+
+enum CidStatus {
+    CID_STATUS_UNKNOWN = 0;
+
+    // This cid is still in the store.
+    CID_STATUS_ON = 1;
+
+    // This cid has left the store and thus been turned off.
+    CID_STATUS_OFF = 2;
+}
+
+message CidInfo {
+    // identifier for cid
+    string cid = 1;
+
+    int64 start_time = 2;
+    int64 end_time = 3;
+
+    // deprecate this and use CIDPersonTypes
+    PersonType person_type = 4;
+
+    CIDPersonTypes cid_person_type = 9;
+
+    CidStatus cid_status = 5;
+
+    // The tpids that have been associated to this cid.
+    // Empty means no tpid assignment yet.
+    repeated string tpids = 6;
+
+    // The pid that has been associated to this cid.
+    // Empty means no pid assignment yet.
+    string pid = 7;
+
+    // The track_id that results in entrance detection in RTP, and
+    // thus is associated with CID.
+    string entrance_track_id = 8;
+}
+
+message NppResult {
+  string mvid = 1;
+  string faceid = 2;
+  string assignment = 3;
+}
+
+message NormalClotheStyleGroup {
+    ClotheStyle cloth_style = 1;
+    float cloth_style_prob = 2;
+    ClotheLength cloth_length = 3;
+    float cloth_length_prob = 4;
+    repeated MainColor cloth_color = 5;
+    repeated float cloth_color_prob = 6;
+}
+
+message NormalPantStyleGroup {
+    PantStyle pant_style = 1;
+    float pant_style_prob = 2;
+    PantLength pant_length = 3;
+    float pant_length_prob = 4;
+    repeated MainColor pant_color = 5;
+    repeated float pant_color_prob = 6;
+}
+
+message NormalStyleGroup {
+    repeated NormalClotheStyleGroup clothe_style_group = 1;
+    repeated NormalPantStyleGroup pant_style_group = 2;
+    HairStyle hair_style = 3;
+    float hair_style_prob = 4;
+    ShoeStyle shoe_style = 5;
+    float shoe_style_prob = 6;
+    repeated MainColor shoe_color = 7;
+    repeated float shoe_color_prob = 8;
+    HatStyle hat_style = 9;
+    float hat_style_prob = 10;
+    repeated MainColor hat_color = 11;
+    repeated float hat_color_prob = 12;
+    ScarfStyle scarf_style = 13;
+    float scarf_style_prob = 14;
+    repeated BagStyle bag_style = 15;
+    repeated float bag_style_prob = 16;
+}
+
+message BodyAttribute {
+    bool suitable = 1;
+    float suitable_prob = 9; // added on 11/02/2021
+    Genre body_genre = 2; //
+    float body_genre_prob = 3;
+    int32 life_stage = 4;
+    float life_stage_prob = 5;
+    UniformStyle uniform_style = 6;
+    float uniform_style_prob = 7;
+    NormalStyleGroup normal_styles = 8;
+}
+
+message CIDPersonTypes {
+    PersonType person_type = 1;
+    bool person_type_determined = 2;
+    float person_type_prob = 3;
+
+    Genre body_genre = 4;
+    bool body_genre_determined = 5;
+    float body_genre_prob = 6;
+
+    int32 life_stage = 7;
+    bool life_stage_determined = 8;
+    float life_stage_prob = 9;
+
+    UniformStyle uniform_style = 10;
+    bool uniform_style_determined = 11;
+    float uniform_style_prob = 12;
+}

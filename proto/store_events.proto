@@ -1,0 +1,112 @@
+/* Proto definition for store events. */
+
+syntax = "proto3";
+import "version.proto";
+
+package events;
+
+
+enum EventType {
+    STORE_INOUT = 0;
+    REGION_INOUT = 1;
+    REGION_VISIT = 2;
+    RECEPTION = 3;
+    ASSISTIVE_RECEPTION = 4;
+    SIT = 5;
+    COMPANION = 6;
+    PASSBY = 7;
+    PRODUCT = 8;
+    STAY = 9;
+    INDIVIDUAL_RECEPTION = 10;
+    // new event types here
+    // next tag 10
+}
+
+
+enum RegionType {
+    STORE = 0;
+    COUNTER = 1;
+    CAR = 2;
+    INTERNAL_ROOM = 3;
+    INTERNAL_REGION = 4;
+    TRANSACTION_REGION = 5;
+    PRODUCT_REGION = 6;
+    // new region types here
+    // next tag 6
+}
+
+enum DoorType {
+    FRONT_DOOR = 0; // door that can lead outside, count entrance
+    BACK_DOOR = 1; // door that can lead outside, but no entrance
+    INTERNAL_DOOR = 2; // door that cannot lead outside
+    CONNECTOR = 3; // door to different floor of store
+    UNKNOWN = 4; // unknown door
+    // new door types here
+    // next tag 5
+}
+
+
+message Region {
+    RegionType type = 1;
+    string id = 2;
+    // more region properties here
+    //  next tag 3
+}
+
+message Events {
+    repeated Event store_events = 1;
+    string store_id = 2;
+    string date = 3;
+    tracking_pipeline.ModelVersions model_versions = 4;
+    tracking_pipeline.ModuleVersions module_versions = 5;
+    // next tag 6
+}
+
+message InOutProperties {
+    string in_door_id = 1;
+    DoorType in_door_type = 2;
+    string out_door_id = 3;
+    DoorType out_door_type = 4;
+    // next tag 5
+}
+
+message ReceptionProperties {
+    repeated string staff_pid = 1;
+    // next tag 2
+}
+
+message CompanionProperties {
+    repeated string pid = 1;
+    repeated string staff_pid = 2;
+    // next tag 3
+}
+
+enum Action {
+    TRYON = 0;
+    MOVE = 1;
+    TAKE = 2;
+    // new interactions with product
+    // next tag 4
+}
+
+message AttributeProperties {
+    string product_id = 1;
+    Action action = 2;
+    // next tag 3
+}
+
+message Event {
+  string id = 1; // can be pid or group id
+  EventType type = 2;
+  uint64 start_time = 3;
+  uint64 end_time = 4;
+  Region region = 5;
+  oneof properties  {
+      InOutProperties inout_properties = 6;
+      // visit event does not require any extra properties
+      ReceptionProperties reception_properties = 7;
+      CompanionProperties companion_properties = 8;
+      AttributeProperties attribute_properties = 9;
+  }
+  // next tag 10
+}

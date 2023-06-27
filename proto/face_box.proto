@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package tracking_pipeline;
+
+message PB_FaceBox {
+    int32 left = 1;
+    int32 right = 2;
+    int32 top = 3;
+    int32 bottom = 4;
+    int32 angle = 5;
+
+    float quality = 6;
+    float confidence = 7;
+
+    // cv::Mat for the image is not included here and will be added if necessary
+}
+

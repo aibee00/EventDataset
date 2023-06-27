@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+import "online_event_detection.proto";
+
+package tracking_pipeline.online;
+
+option java_multiple_files = true;
+option java_package = "com.aibee.mlp.mall.proxy";
+
+service EventService {
+    // send camera detection events
+    rpc reportDetection (CameraEvents) returns (ReportResponse) {
+    }
+
+    rpc reportEventPair(ProjectEventPair) returns (ReportResponse) {
+    }
+
+    rpc reportHeatMap(HeatMap) returns (ReportResponse) {
+    }
+
+    rpc reportPassInOut(PassInOut) returns (ReportResponse) {
+    }
+}
+
+message ReportResponse {
+    uint32 code = 1;
+    string message = 2;
+}
+

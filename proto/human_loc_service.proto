@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package tracking_pipeline.online;
+option go_package = "./.gen";
+import "online_tracking_results.proto";
+
+service HumanTrackLocalization {
+  rpc Localize(HumanTrackLocalizationRequest) returns (HumanTrackLocalizationResponse);
+  rpc LocalizeDebug(HumanTrackLocalizationDebugRequest) returns (HumanTrackLocalizationDebugResponse);
+  rpc Shutdown(HumanTrackLocalizationRequest) returns (HumanTrackLocalizationResponse);
+}
+
+message HumanTrackLocalizationRequest {
+  Tracks input_tracks = 1;
+  bool flush = 2;
+}
+
+message HumanTrackLocalizationResponse {
+  Tracks output_tracks = 1;
+  repeated string merged_track_ids = 2;
+  float run_time = 3;
+  Tracks input_tracks = 4;
+}
+
+
+message HumanTrackLocalizationDebugRequest {
+  Tracks input_tracks = 1;
+  bool flush = 2;
+
+  // these two fields are used in debug mode
+  string track_id1 = 3;
+  string track_id2 = 4;
+}
+
+
+message HumanTrackLocalizationDebugResponse {
+  Tracks output_tracks = 1;
+  repeated string merged_track_ids = 2;
+  repeated TrackMergeDetail track_merge_details = 3;
+  repeated TrackMergeDetail target_track_pair_details = 4;
+  float run_time = 5;
+  Tracks input_tracks = 6;
+}
+
+
+message TrackMergeDetail {
+  string track_id = 1;
+  string merge_track_id = 2;
+
+  //distance between merged two tracks
+  float pano_bot_distance = 3;
+  float same_camera_iou = 4;
+  float geo_distance = 5;
+  float dl_mapping = 6;
+  float body_appearance = 7;
+  float face_appearance = 8;
+  float overall_affinity = 9;
+}

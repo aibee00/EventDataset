@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package tracking_pipeline.online.kafka;
+
+import "online_kafka.proto";
+
+message PersonMessage {
+    UUID uuid = 1;
+    MessageHeader message_header = 2;
+
+    Person person = 8;
+}

@@ -1,0 +1,320 @@
+/* Proto definition for tracking results. */
+
+syntax = "proto3";
+
+package tracking_pipeline.online;
+option go_package = "./.gen";
+import "common.proto";
+import "version.proto";
+
+enum CameraType {
+    CAMERA_UNKNOWN = 0;
+    CAMERA_FID = 1;
+    CAMERA_FISH_EYE_RAW = 2;
+    CAMERA_FISH_EYE_PANO = 3;
+    CAMERA_FISH_EYE_BOT = 4;
+    CAMERA_DID = 5;
+}
+
+enum DetectionType {
+    DETECTION_TYPE_UNKNOWN = 0;
+    DETECTION_TYPE_BODY = 1;
+    DETECTION_TYPE_HEAD = 2;
+}
+
+enum TrackingVersion {
+    TRACKING_VERSION_LS_VIP = 0;
+    TRACKING_VERSION_SV = 1;
+    TRACKING_VERSION_MV = 2;
+    TRACKING_VERSION_STUFF = 3;
+}
+
+enum DetectionPostureType {
+    DETECTION_POSTURE_UNKNOWN = 0;
+    DETECTION_POSTURE_STANDING = 1;
+    DETECTION_POSTURE_SEATED = 2;
+}
+
+enum DetectionViewType {
+    DETECTION_VIEW_UNKNOWN = 0;
+    DETECTION_VIEW_FRONT = 1;
+    DETECTION_VIEW_REAR = 2;
+    DETECTION_VIEW_SIDE = 3;
+}
+
+message Activity {
+    uint32 event_id = 1;
+    float event_prob = 2;
+}
+
+message Tracks {
+    repeated Track tracks = 1;
+
+    // v1 for SV start ===============
+    TrackingVersion version = 2;
+    string store_id = 3;
+    string channel_id = 4;
+    string nvr_id = 5;
+    CameraType camera_type = 6;
+    DetectionType detection_type = 7;
+    string face_feature_version = 8;
+    string appearance_model_url = 9;
+    string host_name = 10;
+    repeated ShoeTrack shoe_tracks = 11;
+    ModelVersions model_versions = 12;
+    ModuleVersions module_versions = 13;
+
+    // the messge id(uuid) of current tracks.
+    string message_uuid = 14;
+    repeated Frame org_frames = 15;
+    repeated GeneralObjectTrack obj_tracks = 16;
+}
+
+message Frame {
+   int32 frame_index = 1;
+   bytes jpeg_data = 2;
+   int32 org_frame_width = 3;
+   int32 org_frame_height = 4;
+   int32 width = 5;
+   int32 height = 6;
+   int64 captured_time = 7;
+}
+
+message ShoeTrackingDetection {
+    uint32 frame_index = 1;
+    string cam_id = 2;
+    uint32 tracklet_index = 3;
+    bool track_confirmed = 4;
+    uint64 det_time = 5;
+
+    float detection_score = 6;
+    int32 box_x = 7;
+    int32 box_y = 8;
+    int32 box_width = 9;
+    int32 box_height = 10;
+
+    string vid_id = 11;
+    float shoe_quality = 12;
+    float occ_prob = 13;
+    DetectionType detection_type = 14;
+    DetectionViewType detection_view_type = 15;
+    repeated KeyPoint key_points = 16;
+    string cam_type = 17;
+}
+
+message Color {
+  float red = 1;
+  float green = 2;
+  float blue = 3;
+}
+message ShoeColor {
+  // a shoe might have multiple colors
+  repeated Color colors = 1;
+}
+message ShoeTrack {
+  float confidence = 1;
+  string track_id = 2;
+  repeated string merged_track_ids = 3;
+  string cam_id = 4;
+  string cam_type = 5;
+  repeated string merged_cam_ids = 6;
+  string sku_id = 7;
+  uint64 start_time = 8;
+  uint64 end_time = 9;
+  AppearanceFeatures features = 10;
+  repeated ShoeTrackingDetection shoe_tracked_detections = 11;
+  uint32 tracklet_id = 12;
+  bytes first_frame_shoe_patch = 13;
+  uint32 first_frame_shoe_patch_frame_idx = 14;
+  Box2D first_frame_shoe_patch_enlarged_bbx = 15;
+  Box2D first_frame_shoe_patch_relative_shoe_bbx = 16;
+  bytes last_frame_shoe_patch = 17;
+  uint32 last_frame_shoe_patch_frame_idx = 18;
+  Box2D last_frame_shoe_patch_enlarged_bbx = 19;
+  Box2D last_frame_shoe_patch_relative_shoe_bbx = 20;
+  uint32 best_quality_frame_index = 21;
+  // suggested SKU_IDs (sorted based on the probabilities)
+  repeated int32 sku_labels = 22;
+  // corresponding probabilities of labels. (sum should be less than 1, sum up to 1 if all labels are provided).
+  repeated float sku_probabilities = 23;
+  ShoeColor shoe_colors = 24;
+  repeated float shoe_type_probs = 25; // probs distribution for shoe types, like high heel, medium heel or low heel
+  float shoe_occ_prob = 26; // prob of the shoe getting occluded
+  // Next tag: 27
+
+}
+
+message GeneralObjectTrack {
+  string track_id = 1;
+  repeated string merged_track_ids = 2;
+  string cam_id = 3;
+  repeated string merged_cam_ids = 4;
+  uint64 start_time = 5;
+  uint64 end_time = 6;
+  AppearanceFeatures features = 7; // optional; can be empty
+  repeated GeneralObjDetection tracked_detections = 8;
+  uint32 tracklet_id = 9;
+  bytes box_patches = 10;
+  string mv_linked_id = 11; // we may apply mv on obj tracks
+  uint32 box_patch_frame_index = 12;
+  string box_patches_url = 13;
+  int32 object_class_label = 14;
+}
+
+
+
+message Track {
+  float confidence = 1;
+  string track_id = 2;
+  repeated string merged_track_ids = 3;
+  string cam_id = 4;
+  string cam_type = 5;
+  repeated string merged_cam_ids = 6;
+  string pid = 7;
+  Point2D start_map_pos = 8;
+  Point2D end_map_pos = 9;
+  uint64 start_time = 10;
+  uint64 end_time = 11;
+  AppearanceFeatures features = 12;
+  AppearanceFeatures face = 13;
+  repeated TrackingDetection tracked_detections = 14;
+  uint32 tracklet_id = 15;
+  bytes box_patches = 16;
+  bytes face_patches = 17;
+  float face_quality = 18;
+  float face_confidence = 19;
+  DetectionType detection_type = 20;
+  repeated TrackingLocalization tracked_localization = 21;
+  // the staff classification result
+  StaffRecognitionResult staff_result = 22;
+  string mv_linked_id = 23;
+  uint32 best_face_frame_index = 24;
+  Box2D best_face_box = 25;
+  // frame index of body patch detection
+  uint32 body_patch_frame_index = 26;
+  // body patch box
+  Box2D body_patch_box = 27;
+  // face recognition based id
+  int32 face_recog_id = 28;
+  // did-dl mapping based id
+  int32 did_mapped_id = 29;
+  // suggested PIDs (sorted based on the probabilities)
+  repeated int32 pid_labels = 30;
+  // corresponding probabilities of labels. (sum should be less than 1, sum up to 1 if all labels are provided).
+  repeated float pid_probabilities = 31;
+  repeated BodyInfo body_info = 32;
+  repeated FaceInfo face_info = 33;
+  string mv_linked_id2 = 34;
+  // invalid track. Could be outside of the store, static false positive, etc
+  bool is_invalid = 35;
+  // variable for analyzing the source of error
+  int32 face_recog_source = 36;
+
+  Box2D origin_best_face_box =  37;
+
+  bytes head_patches = 38;
+  AppearanceFeatures head_features = 39;
+  AppearanceFeatures mask_probs = 40;
+  
+  // for common push 
+  int32 package_index = 41;
+  int32 origin_best_face_box_angle = 42;
+
+  //for Mall Unified Image Service(MUIS)
+  string box_patches_url = 43;
+  string face_patches_url = 44;
+  string head_patches_url = 45;
+
+  // for mannequin detection
+  repeated HOGPerDetection hog_per_detection = 46;
+  bool potential_mannequin = 47;
+  string cid = 48; 
+  int32 age = 49; // sample output 20
+  Gender gender = 50; // 
+  float track_body_quality = 51;
+  BodyAttribute body_attrs = 52; // added by rlweng
+  float best_track_body_quality = 53;
+  AppearanceFeatures finegrain_features = 54;
+}
+
+message GeneralObjDetection {
+    uint32 frame_index = 1;
+    string cam_id = 2;
+    uint32 tracklet_index = 3;
+    bool track_confirmed = 4;
+    uint64 det_time = 5;
+
+    float detection_score = 6;
+    int32 box_x = 7;
+    int32 box_y = 8;
+    int32 box_width = 9;
+    int32 box_height = 10;
+
+    Point2D map_pos = 11;
+    string vid_id = 12;
+    string cam_type = 13;
+    int32 object_class_label = 14;
+}
+
+message TrackingDetection {
+    uint32 frame_index = 1;
+    string cam_id = 2;
+    uint32 tracklet_index = 3;
+    bool track_confirmed = 4;
+    uint64 det_time = 5;
+
+    float detection_score = 6;
+    int32 box_x = 7;
+    int32 box_y = 8;
+    int32 box_width = 9;
+    int32 box_height = 10;
+
+    Point2D map_pos = 11;
+    // for generating the json back
+    string vid_id = 12;
+    float face_quality = 13;
+    DetectionType detection_type = 14;
+
+    DetectionPostureType detection_posture_type = 15;
+    DetectionViewType detection_view_type = 16;
+    repeated KeyPoint key_points = 17;
+    float head_angle = 18;
+    string cam_type = 19;
+    Point2D map_pos_head = 20;
+    int32 object_class_label = 21;
+    repeated Activity activities = 22;
+    float body_quality = 23;
+}
+
+// per time localization, not bounded to a camera
+message TrackingLocalization {
+    uint64 det_time_msec = 1;
+    Point2D map_pos = 2;
+    float confidence = 3;
+}
+
+message StaffRecognitionResult {
+    // default value "0" means not-found/no-match from staff database.
+    int32 staff_recog_id = 1;
+
+    // corresponding face_id.
+    int32 face_id = 2;
+
+    float confidence = 3;
+}
+
+message BodyInfo {
+  bytes box_patches = 1;
+  uint32 body_patch_frame_index = 2;
+  Box2D body_patch_box = 3;
+  string box_patches_url = 4;   //for MUIS
+}
+
+message FaceInfo {
+  bytes face_patches = 1;
+  float face_quality = 2;
+  float face_confidence = 3;
+  uint32 face_frame_index = 4;
+  Box2D face_box = 5;
+  string face_patches_url = 6;  //for MUIS
+}
