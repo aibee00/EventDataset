@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-STORE_INOUT_NEAR_TIME = 5  # 用于获取进出店时刻前后时间段[ts-NEAR_TIME, ts+NEAR_TIME]
+STORE_INOUT_NEAR_TIME = 3  # 用于获取进出店时刻前后时间段[ts-NEAR_TIME, ts+NEAR_TIME]
 
 def hms2sec(hms):
     h = int(hms / 10000)
