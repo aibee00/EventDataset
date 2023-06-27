@@ -1,0 +1,3 @@
+[submodule "proto"]
+	path = proto
+	url = https://code.aibee.cn/common/proto.git
