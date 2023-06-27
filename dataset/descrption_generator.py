@@ -219,7 +219,7 @@ class PromptDescriptor(object):
     def generate_prompt(self, event, ts=None):
         if event["event_type"] == "STORE_INOUT":
             txt_file = f"{self.description_file_path}/store_inout.txt"
-            return str(StoreInoutTemplate(txt_file, event, self.area_descriptor))
+            return str(StoreInoutTemplate(txt_file, event, self.area_descriptor, ts))
         elif event["event_type"] == "REGION_VISIT":
             txt_file = f"{self.description_file_path}/region_visit.txt"
             return str(RegionVisitTemplate(txt_file, event, self.area_descriptor))

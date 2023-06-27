@@ -367,8 +367,10 @@ class EventDataset(Dataset):
         elif event_type == "STORE_INOUT":
             # 如果是进出店，这里我们只需关注进店时的一小段时间即可，例如前后5s
             pid_list.append(event["pid"])
-            valid_time_range = (event["start_time"] - STORE_INOUT_NEAR_TIME, event["start_time"] + STORE_INOUT_NEAR_TIME)
-            valid_ts_set.update(set(range(*valid_time_range)))
+            valid_time_range_start = (event["start_time"] - STORE_INOUT_NEAR_TIME, event["start_time"] + STORE_INOUT_NEAR_TIME)
+            valid_time_range_end = (event["end_time"] - STORE_INOUT_NEAR_TIME, event["end_time"] + STORE_INOUT_NEAR_TIME)
+            valid_ts_set.update(set(range(*valid_time_range_start)))
+            valid_ts_set.update(set(range(*valid_time_range_end)))
 
         else:
             pid_list.append(event["pid"])
