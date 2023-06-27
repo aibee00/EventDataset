@@ -160,7 +160,7 @@ class EventDataset(Dataset):
         self.area_descriptor = AreaDescriptor(area_anno_path, car_pose)
 
         # Get instacne of prompt descriptor
-        self.prompt_descriptor = PromptDescriptor(osp.join(osp.dirname(__file__), "prompt_templates"), self.area_descriptor)
+        self.prompt_descriptor = PromptDescriptor(osp.join(osp.dirname(__file__), "../prompt_templates"), self.area_descriptor)
 
         self.label_path = osp.join(self.dataset_path, "label.json")
 

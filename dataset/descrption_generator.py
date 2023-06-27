@@ -94,7 +94,18 @@ class ImageObject(object):
         self.__path = new_path
 
 
+# 带参数的装饰器
+def wrapper_str(func):
+    def wrapper(self, *args, **kwargs):
+        assert osp.exists(self.template_file), f"Template file not found in: {self.template_file}"
+        result = func(self, *args, **kwargs)
+        return result
+    return wrapper
+
+
 class Template(metaclass=ABCMeta):
+    template_file = None
+
     def __init__(self, template_file, event, area_descriptor=None):
         self.template_file = template_file
         self.event = event
@@ -110,10 +121,9 @@ class StoreInoutTemplate(Template):
     def __init__(self, template_file, event, area_descriptor=None):
         super().__init__(template_file, event, area_descriptor)
 
+    # 添加装饰器
+    @wrapper_str
     def __str__(self):
-        if not osp.exists(self.template_file):
-            return f"Template file not found in: {self.template_file}"
-        
         with open(self.template_file, 'r') as f:
             template = f.read()
         
@@ -127,10 +137,8 @@ class RegionVisitTemplate(Template):
     def __init__(self, template_file, event, area_descriptor=None):
         super().__init__(template_file, event, area_descriptor)
 
+    @wrapper_str
     def __str__(self):
-        if not osp.exists(self.template_file):
-            return f"Template file not found in: {self.template_file}"
-        
         with open(self.template_file, 'r') as f:
             template = f.read()
         
@@ -146,10 +154,8 @@ class RegionInoutTemplate(Template):
     def __init__(self, template_file, event, area_descriptor=None):
         super().__init__(template_file, event, area_descriptor)
 
+    @wrapper_str
     def __str__(self):
-        if not osp.exists(self.template_file):
-            return f"Template file not found in: {self.template_file}"
-        
         with open(self.template_file, 'r') as f:
             template = f.read()
         
@@ -165,10 +171,8 @@ class CarInoutTemplate(Template):
     def __init__(self, template_file, event, area_descriptor=None):
         super().__init__(template_file, event, area_descriptor)
 
+    @wrapper_str
     def __str__(self):
-        if not osp.exists(self.template_file):
-            return f"Template file not found in: {self.template_file}"
-        
         with open(self.template_file, 'r') as f:
             template = f.read()
         
@@ -184,10 +188,8 @@ class CompanionTemplate(Template):
     def __init__(self, template_file, event, area_descriptor=None):
         super().__init__(template_file, event, area_descriptor)
 
+    @wrapper_str
     def __str__(self):
-        if not osp.exists(self.template_file):
-            return f"Template file not found in: {self.template_file}"
-        
         with open(self.template_file, 'r') as f:
             template = f.read()
         
@@ -201,10 +203,8 @@ class IndividualReceptionTemplate(Template):
     def __init__(self, template_file, event, area_descriptor=None):
         super().__init__(template_file, event, area_descriptor)
 
+    @wrapper_str
     def __str__(self):
-        if not osp.exists(self.template_file):
-            return f"Template file not found in: {self.template_file}"
-        
         with open(self.template_file, 'r') as f:
             template = f.read()
         
