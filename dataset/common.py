@@ -11,6 +11,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+STORE_INOUT_NEAR_TIME = 5  # 用于获取进出店时刻前后时间段[ts-NEAR_TIME, ts+NEAR_TIME]
+
 def hms2sec(hms):
     h = int(hms / 10000)
     m = int(hms / 100) % 100
@@ -79,9 +81,9 @@ def get_overlap_time(time_range1, time_range2):
     start_time, end_time = time_range1
     start_time2, end_time2 = time_range2
     if start_time > end_time or start_time2 > end_time2:
-        return 0
+        return [0, 0]
     if end_time < start_time2 or end_time2 < start_time:
-        return 0
+        return [0, 0]
     return max(start_time, start_time2), min(end_time, end_time2)
 
 

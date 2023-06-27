@@ -3,7 +3,7 @@ import os.path as osp
 import cv2
 import numpy as np
 from abc import ABCMeta, abstractmethod
-from common import cv2AddChineseText
+from common import STORE_INOUT_NEAR_TIME, cv2AddChineseText
 
 
 class ImageObject(object):
@@ -51,10 +51,11 @@ def wrapper_str(func):
 class Template(metaclass=ABCMeta):
     template_file = None
 
-    def __init__(self, template_file, event, area_descriptor=None):
+    def __init__(self, template_file, event, area_descriptor=None, ts=None):
         self.template_file = template_file
         self.event = event
         self.area_descriptor = area_descriptor
+        self.ts = ts
     
     @abstractmethod
     def __str__(self):
@@ -63,16 +64,25 @@ class Template(metaclass=ABCMeta):
 
 class StoreInoutTemplate(Template):
 
-    def __init__(self, template_file, event, area_descriptor=None):
-        super().__init__(template_file, event, area_descriptor)
+    def __init__(self, template_file, event, area_descriptor=None, ts=None):
+        super().__init__(template_file, event, area_descriptor, ts)
 
     # 添加装饰器
     @wrapper_str
     def __str__(self):
         with open(self.template_file, 'r') as f:
             template = f.read()
+
+        # 如果self.ts不为None, 则根据ts来判断是进店还是出店
+        inout = "经过"
+        if self.ts:
+            # ts 在开始时间附近(前后10s)则标记inout为'进入'，结束时间附近标记为'走出'
+            if abs(self.ts - self.event['start_time']) < STORE_INOUT_NEAR_TIME * 2:
+                inout = "进入"
+            elif abs(self.ts - self.event['end_time']) < STORE_INOUT_NEAR_TIME * 2:
+                inout = "走出"
         
-        template = template.format(self.event['pid'])
+        template = template.format(self.event['pid'], inout)
         
         return template
     
@@ -206,19 +216,25 @@ class PromptDescriptor(object):
         return img_blank
 
 
-    def generate_prompt(self, event):
+    def generate_prompt(self, event, ts=None):
         if event["event_type"] == "STORE_INOUT":
-            return StoreInoutTemplate(f"{self.description_file_path}/store_inout.txt", event, self.area_descriptor).__str__()
+            txt_file = f"{self.description_file_path}/store_inout.txt"
+            return str(StoreInoutTemplate(txt_file, event, self.area_descriptor))
         elif event["event_type"] == "REGION_VISIT":
-            return RegionVisitTemplate(f"{self.description_file_path}/region_visit.txt", event, self.area_descriptor).__str__()
+            txt_file = f"{self.description_file_path}/region_visit.txt"
+            return str(RegionVisitTemplate(txt_file, event, self.area_descriptor))
         elif event["event_type"] == "REGION_INOUT" and event["region_type"] == "INTERNAL_REGION":
-            return RegionInoutTemplate(f"{self.description_file_path}/region_inout.txt", event, self.area_descriptor).__str__()
+            txt_file = f"{self.description_file_path}/region_inout.txt"
+            return str(RegionInoutTemplate(txt_file, event, self.area_descriptor))
         elif event["event_type"] == "REGION_INOUT" and event["region_type"] == "CAR":
-            return CarInoutTemplate(f"{self.description_file_path}/car_inout.txt", event, self.area_descriptor).__str__()
+            txt_file = f"{self.description_file_path}/car_inout.txt"
+            return str(CarInoutTemplate(txt_file, event, self.area_descriptor))
         elif event["event_type"] == "COMPANION":
-            return CompanionTemplate(f"{self.description_file_path}/companion.txt", event, self.area_descriptor).__str__()
+            txt_file = f"{self.description_file_path}/companion.txt"
+            return str(CompanionTemplate(txt_file, event, self.area_descriptor))
         elif event["event_type"] == "INDIVIDUAL_RECEPTION":
-            return IndividualReceptionTemplate(f"{self.description_file_path}/individual_reception.txt", event, self.area_descriptor).__str__()
+            txt_file = f"{self.description_file_path}/individual_reception.txt"
+            return str(IndividualReceptionTemplate(txt_file, event, self.area_descriptor))
         else:
             raise Exception(f"Event type {event['event_type']} not supported.")
         

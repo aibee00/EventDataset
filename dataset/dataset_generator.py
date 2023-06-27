@@ -14,7 +14,7 @@ from get_events import EventInfoFactoryImpl, GTEventInfoFactoryImpl, EVENTS_TYPE
 import json
 import shutil
 
-from common import hms2sec, ts_to_string, get_location, get_overlap_time, get_pid_loc_time_range, logger
+from common import STORE_INOUT_NEAR_TIME, duration, hms2sec, ts_to_string, get_location, get_overlap_time, get_pid_loc_time_range, logger
 
 
 # 给出pid、location和时间段，返回覆盖到该location的所有channels
@@ -345,16 +345,29 @@ class EventDataset(Dataset):
                 pic_locs = self._get_location(pid)
                 # 通过pid轨迹的时间段
                 time_slice = get_pid_loc_time_range(pic_locs, pid)
+
+                # 如果time_slice长度小于5秒则跳过
+                if duration(time_slice) < 5:
+                    continue
+
                 # common_time与time_slice的overlap时间段
-                valid_time_range = get_overlap_time(valid_time_range, time_slice)
+                try:
+                    valid_time_range_n = get_overlap_time(valid_time_range, time_slice)
+                except:
+                    import pdb; pdb.set_trace()
+
+                # 如果valid_time_range和time_slice没有交集则两个时间段都保留
+                if duration(valid_time_range_n) == 0:
+                    valid_ts_set.update(set(range(*time_slice)))
+                else:
+                    valid_time_range = valid_time_range_n
             
             valid_ts_set.update(set(range(*valid_time_range)))
 
         elif event_type == "STORE_INOUT":
             # 如果是进出店，这里我们只需关注进店时的一小段时间即可，例如前后5s
-            margin = 5
             pid_list.append(event["pid"])
-            valid_time_range = (event["start_time"] - margin, event["start_time"] + margin)
+            valid_time_range = (event["start_time"] - STORE_INOUT_NEAR_TIME, event["start_time"] + STORE_INOUT_NEAR_TIME)
             valid_ts_set.update(set(range(*valid_time_range)))
 
         else:
@@ -419,7 +432,7 @@ class EventDataset(Dataset):
                     self.img_descriptor.register(org_img_path=img_file, img_name=img_name)
 
                     # 5.根据事件生成图片的描述
-                    description = self.prompt_descriptor.generate_prompt(event)
+                    description = self.prompt_descriptor.generate_prompt(event, ts)
 
                     # 6.将描述添加到所有channels的图片的描述中
                     self.img_descriptor.add_description(img_file, description)
