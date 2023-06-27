@@ -272,7 +272,7 @@ class EventDataset(Dataset):
         with open(self.label_path, "w", encoding='utf-8') as f:
             json.dump(self.img_descriptor.img_table.value2str(), f, indent=2, ensure_ascii=False)
 
-    def viz_img_prompt(self,):
+    def viz_img_prompt(self, num=10):
         """ 将label.json中的image和label可视化
         """
         # 定义draw_img_prompt函数，在同一画面中可视化img和annotation
@@ -300,7 +300,7 @@ class EventDataset(Dataset):
             cv2.imwrite(img_path, img)
             print(f"Img saved to: {img_path}")
             
-            if i == 10:
+            if i == num:
                 break
             # cv2.imshow("img", img)
             # cv2.waitKey(0)
@@ -530,7 +530,7 @@ if __name__ == "__main__":
         dataset_creater.create_dataset()
 
     # 显示img和prompt
-    # dataset_creater.viz_img_prompt()
+    # dataset_creater.viz_img_prompt(50)
     
     logger.info("Done!")
 
