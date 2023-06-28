@@ -488,6 +488,7 @@ def parse_arguments():
     parser.add_argument('--events_file', type=str, help="events.pb path or gt_file path", default="")
     parser.add_argument('--video_path', type=str, help="video path", default="")
     parser.add_argument('--dataset_path', type=str, help="output path", default="./data/")
+    parser.add_argument('--viz', action='store_true', help="viz img and prompt")
     return parser.parse_args()
 
 
@@ -527,7 +528,10 @@ if __name__ == "__main__":
         dataset_creater.create_dataset()
 
     # 显示img和prompt
-    # dataset_creater.viz_img_prompt(50)
+    # dataset_creater.viz_img_prompt(100)
+    if args.viz:
+        from viz import viz_img_prompt
+        viz_img_prompt(args.dataset_path, dataset_creater)
     
     logger.info(f"Done! Total: {len(dataset_creater)} images")
 
