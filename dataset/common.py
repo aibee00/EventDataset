@@ -127,7 +127,7 @@ def auto_wrap(text, max_length, textSize, sep=";"):
             line = ''
             lineLen = 0
 
-        line += word + ''
+        line += word + sep
     lines.append(line)
     return lines
     
