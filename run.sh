@@ -20,12 +20,12 @@ store_infos_path=/ssd/${USER}/StoreInfos/${BRAND}/${CITY}/${BRANCH}/
 ################ 获取 new_xy ###############
 # 这里需要用GT的new_xy 
 # new_xy_path=/ssd/${USER}/work_dir/${BRAND}-${CITY}-${BRANCH}-${DATE}-${TAG}/output_data/new_xy
-ROOT=/ssd/${USER}/work_dir
+# ROOT=/ssd/${USER}/work_dir
+ROOT=`pwd`/data/${BRAND}-${CITY}-${BRANCH}-${DATE}
 new_xy_path=$ROOT/gt_new_xy
 
 # 判断是否存在，如果不存在则从HDFS下载
-[[ -e $new_xy_path ]] || \
-(hdfscli download /bj_dev/user/wphu/gt_new_xy.tar $ROOT/gt_new_xy.tar && tar xvf $new_xy_path.tar -C $ROOT)
+[[ -e $new_xy_path ]] || bash dataset/download_new_xy.sh $USER $BRAND $CITY $BRANCH $DATE $ROOT
 
 new_xy_path_tar=$new_xy_path/${BRAND}-${CITY}-${BRANCH}-${DATE}/gt_new_xy.tar.gz
 new_xy_path=$new_xy_path/${BRAND}-${CITY}-${BRANCH}-${DATE}/new_xy
@@ -34,7 +34,12 @@ new_xy_path=$new_xy_path/${BRAND}-${CITY}-${BRANCH}-${DATE}/new_xy
 [[ -e $new_xy_path ]] || (mkdir -p $new_xy_path && tar xvf $new_xy_path_tar -C $new_xy_path)
 #################################################
 
-car_pose=/ssd/${USER}/work_dir/${BRAND}-${CITY}-${BRANCH}-${DATE}-${TAG}/inputs/pose.json
+################ 获取 pid_output ###############
+pid_output_path=`pwd`/data/${BRAND}-${CITY}-${BRANCH}-${DATE}/pid_output
+[[ -e $pid_output_path ]] || bash dataset/prepare_data.sh $USER $BRAND $CITY $BRANCH $DATE `dirname $pid_output_path`
+#################################################
+
+car_pose=${ROOT}/pose.json
 # events=/ssd/${USER}/work_dir/${BRAND}-${CITY}-${BRANCH}-${DATE}-${TAG}/event_detection/events.pb
 events=/ssd/${USER}/Benchmarks/${BRAND}/${CITY}/${BRANCH}v7/${DATE}/tpid_mappings.json
 video_path=/ssd/${USER}/videos/${BRAND}-${CITY}-${BRANCH}-${DATE}
@@ -45,6 +50,7 @@ python dataset/dataset_generator.py \
     --store_infos_path $store_infos_path \
     --car_pose $car_pose \
     --new_xy_path $new_xy_path \
+    --pid_output_path $pid_output_path \
     --events_file $events \
     --video_path $video_path \
     --dataset_path $dataset_path 
