@@ -354,7 +354,7 @@ class AreaDescriptor:
         cars = {}
         # 从self.car_infos中获取信息，并初始化CarArea
         for car in self.car_infos:
-            regname = car.get('name', 'CAR区域')
+            regname = car.get('name', f"CAR_{car['cid']}")
             regtype = car.get('type', 'CAR')
 
             car_area = CarArea(
