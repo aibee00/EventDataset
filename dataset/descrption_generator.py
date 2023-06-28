@@ -106,34 +106,52 @@ class RegionVisitTemplate(Template):
 
 class RegionInoutTemplate(Template):
 
-    def __init__(self, template_file, event, area_descriptor=None):
-        super().__init__(template_file, event, area_descriptor)
+    def __init__(self, template_file, event, area_descriptor=None, ts=None):
+        super().__init__(template_file, event, area_descriptor, ts)
 
     @wrapper_str
     def __str__(self):
         with open(self.template_file, 'r') as f:
             template = f.read()
         
+        # 如果self.ts不为None, 则根据ts来判断是进店还是出店
+        inout = "内部访问"
+        if self.ts:
+            # ts 在开始时间附近(前后10s)则标记inout为'进入'，结束时间附近标记为'走出'
+            if abs(self.ts - self.event['start_time']) < STORE_INOUT_NEAR_TIME * 2:
+                inout = "进入"
+            elif abs(self.ts - self.event['end_time']) < STORE_INOUT_NEAR_TIME * 2:
+                inout = "走出"
+        
         region = self.area_descriptor.internal_region[self.event['region_id']]
         reg_name = region.name if region.name else region.type
-        template = template.format(self.event['pid'], reg_name)
+        template = template.format(self.event['pid'], inout, reg_name)
         
         return template
     
 
 class CarInoutTemplate(Template):
 
-    def __init__(self, template_file, event, area_descriptor=None):
-        super().__init__(template_file, event, area_descriptor)
+    def __init__(self, template_file, event, area_descriptor=None, ts=None):
+        super().__init__(template_file, event, area_descriptor, ts)
 
     @wrapper_str
     def __str__(self):
         with open(self.template_file, 'r') as f:
             template = f.read()
         
+        # 如果self.ts不为None, 则根据ts来判断是进店还是出店
+        inout = "内部访问"
+        if self.ts:
+            # ts 在开始时间附近(前后10s)则标记inout为'进入'，结束时间附近标记为'走出'
+            if abs(self.ts - self.event['start_time']) < STORE_INOUT_NEAR_TIME * 2:
+                inout = "进入"
+            elif abs(self.ts - self.event['end_time']) < STORE_INOUT_NEAR_TIME * 2:
+                inout = "走出"
+        
         region = self.area_descriptor.car_region[self.event['region_id']]
-        reg_name = region.name if region.name else region.type
-        template = template.format(self.event['pid'], reg_name)
+        reg_name = region.name if region.name else self.event['region_id']
+        template = template.format(self.event['pid'], inout, reg_name)
         
         return template
     
@@ -225,10 +243,10 @@ class PromptDescriptor(object):
             return str(RegionVisitTemplate(txt_file, event, self.area_descriptor))
         elif event["event_type"] == "REGION_INOUT" and event["region_type"] == "INTERNAL_REGION":
             txt_file = f"{self.description_file_path}/region_inout.txt"
-            return str(RegionInoutTemplate(txt_file, event, self.area_descriptor))
+            return str(RegionInoutTemplate(txt_file, event, self.area_descriptor, ts))
         elif event["event_type"] == "REGION_INOUT" and event["region_type"] == "CAR":
             txt_file = f"{self.description_file_path}/car_inout.txt"
-            return str(CarInoutTemplate(txt_file, event, self.area_descriptor))
+            return str(CarInoutTemplate(txt_file, event, self.area_descriptor, ts))
         elif event["event_type"] == "COMPANION":
             txt_file = f"{self.description_file_path}/companion.txt"
             return str(CompanionTemplate(txt_file, event, self.area_descriptor))

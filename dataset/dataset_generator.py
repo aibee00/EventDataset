@@ -361,7 +361,7 @@ class EventDataset(Dataset):
             
             valid_ts_set.update(set(range(*valid_time_range)))
 
-        elif event_type == "STORE_INOUT":
+        elif event_type == "STORE_INOUT" or event_type == "CAR_INOUT" or event_type == "REGION_INOUT":
             # 如果是进出店，这里我们只需关注进店时的一小段时间即可，例如前后5s
             pid_list.append(event["pid"])
             valid_time_range_start = (event["start_time"] - STORE_INOUT_NEAR_TIME, event["start_time"] + STORE_INOUT_NEAR_TIME)
@@ -529,7 +529,7 @@ if __name__ == "__main__":
     # 显示img和prompt
     # dataset_creater.viz_img_prompt(50)
     
-    logger.info("Done!")
+    logger.info(f"Done! Total: {len(dataset_creater)} images")
 
 
 
