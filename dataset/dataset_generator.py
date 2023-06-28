@@ -351,10 +351,7 @@ class EventDataset(Dataset):
                     continue
 
                 # common_time与time_slice的overlap时间段
-                try:
-                    valid_time_range_n = get_overlap_time(valid_time_range, time_slice)
-                except:
-                    import pdb; pdb.set_trace()
+                valid_time_range_n = get_overlap_time(valid_time_range, time_slice)
 
                 # 如果valid_time_range和time_slice没有交集则两个时间段都保留
                 if duration(valid_time_range_n) == 0:
