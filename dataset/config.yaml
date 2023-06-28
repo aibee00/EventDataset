@@ -1,0 +1,9 @@
+# 位置编码的配置
+
+PromptEncoder:
+  embed_dim: 64
+  image_embedding_size: [32, 32]
+  input_image_size: [32, 32]
+  mask_in_chans: 1
+
+
