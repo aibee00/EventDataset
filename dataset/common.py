@@ -8,6 +8,7 @@ from SharedUtils import TrackWrapperWithoutStore
 
 # 创建log管理器
 import logging
+import multiprocessing
 logger = logging.getLogger(__name__)
 
 
@@ -26,6 +27,16 @@ def ts_to_string(ts, sec_size=1, sep=":"):
     m = int(float(ts) / (sec_size * 60)) % 60
     s = int(float(ts) / sec_size) % 60
     return "{0:02d}{3}{1:02d}{3}{2:02d}".format(h, m, s, sep)
+
+
+def string_to_ts(str, sep=":"):
+    if sep and sep in str:
+        h,m,s = str.split(sep)
+    else:
+        h = str[0:2]
+        m = str[3:5]
+        s = str[6:8]
+    return int(h)*3600 + int(m)*60 + int(s)
 
 
 # 定义duration, 如果开始时间大于结束时间，则返回0
@@ -161,3 +172,18 @@ def cv2AddChineseText(img, text, position, textColor=(0, 255, 0), textSize=30):
 
     # 转换回OpenCV格式
     return cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
+
+
+
+# 定义一个python3实现单例模式的类
+class Singleton(object):
+    def __new__(cls, *args, **kw):
+        if not hasattr(cls, '_instance'):
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+# 定义一个multiprossing.Pool的单例模式的类
+class PoolSingleton(Singleton):
+    def __init__(self, processes=4):
+        self.pool = multiprocessing.Pool(processes=processes)
+    
