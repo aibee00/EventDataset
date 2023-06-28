@@ -3,7 +3,12 @@ import os.path as osp
 import cv2
 import numpy as np
 from abc import ABCMeta, abstractmethod
-from common import STORE_INOUT_NEAR_TIME, cv2AddChineseText
+from common import STORE_INOUT_NEAR_TIME, cv2AddChineseText, merge_bboxes_at_each_channel
+from dataset.prompt_encoder import PromptEncoder
+from get_tracks import TrackLoader
+import torch
+from copy import deepcopy
+import yaml
 
 
 class ImageObject(object):
@@ -234,7 +239,7 @@ class PromptDescriptor(object):
         return img_blank
 
 
-    def generate_prompt(self, event, ts=None):
+    def generate_prompt(self, event, channel, ts=None):
         if event["event_type"] == "STORE_INOUT":
             txt_file = f"{self.description_file_path}/store_inout.txt"
             return str(StoreInoutTemplate(txt_file, event, self.area_descriptor, ts))
@@ -257,3 +262,78 @@ class PromptDescriptor(object):
             raise Exception(f"Event type {event['event_type']} not supported.")
         
     
+class PromptDescriptorV1(PromptDescriptor):
+
+    """ V1 版本说明
+    
+    这个版本主要是实现:
+        - 将pid的名字替换为该pid的body_patch的位置编码嵌入表示
+        - 采用问答的形式，将问题作为Q-former的Text输入，答案作为label与输出就损失
+        - 加入一些中间信息，例如，加入朝向信息
+    """
+
+    def __init__(self, description_file_path, area_descriptor, pid_output_path):
+        super().__init__(description_file_path, area_descriptor)
+        self.track_loader = TrackLoader(pid_output_path)
+
+        # 加载encoder_config
+        config_path = osp.join(osp.dirname(__file__), 'config.yaml')
+        assert osp.exists(config_path), f"config.yaml not found in {osp.dirname(__file__)}"
+        with open(config_path, 'r') as f:
+            cfg = yaml.load(f.read(), Loader=yaml.FullLoader).get('PromptEncoder', {})
+        print(f"Loaded PromptEncoder Config: {cfg}")
+        self.prompt_encoder = PromptEncoder(
+            embed_dim=cfg.get('embed_dim', 64),
+            image_embedding_size=cfg.get('image_embedding_size', (32,32)),
+            input_image_size=cfg.get('input_image_size', (32,32)),
+            mask_in_chans=cfg.get('mask_in_chans', 1)
+        )
+
+    def generate_prompt(self, event, channel, ts=None):
+
+        # 根据pid和ts获取带有channel的boxes集合
+        bboxes = self.track_loader.get_bboxes(event["pid"], ts)
+
+        # 把这一秒的所有bboxes进行合并by average, 返回{ch: BoundingBox}
+        bboxes = merge_bboxes_at_each_channel(bboxes)
+
+        if channel not in bboxes:
+            return ""
+
+        bbox = bboxes[channel]
+        # 将bboxes中的BoundingBox转为tensor
+        bbox = bbox.convert_coords_to_4_corners_points().to_tensor()  # [xyxy]
+
+        # 将bbox(shape(4))转为shape(1,1,4)
+        bbox = bbox.unsqueeze(0)
+
+        # 将BoundBox进行位置编码, 输入boxes: torch.Size([bz, 4, 2])
+        bbox_embed = self.prompt_encoder.get_box_embed(bbox)
+        bbox_embed = bbox_embed.squeeze()  # shape(4)
+        bbox_embed = bbox_embed.detach().cpu().numpy().astype(np.int8).tolist()  # shape(4)
+
+        # 把event["pid"]换成对应的bbox_embedding
+        event_embed = deepcopy(event)
+        event_embed["pid"] = f"<{str(bbox_embed)}>"
+
+        if event["event_type"] == "STORE_INOUT":
+            txt_file = f"{self.description_file_path}/store_inout.txt"
+            return str(StoreInoutTemplate(txt_file, event_embed, self.area_descriptor, ts))
+        elif event["event_type"] == "REGION_VISIT":
+            txt_file = f"{self.description_file_path}/region_visit.txt"
+            return str(RegionVisitTemplate(txt_file, event_embed, self.area_descriptor))
+        elif event["event_type"] == "REGION_INOUT" and event["region_type"] == "INTERNAL_REGION":
+            txt_file = f"{self.description_file_path}/region_inout.txt"
+            return str(RegionInoutTemplate(txt_file, event_embed, self.area_descriptor, ts))
+        elif event["event_type"] == "REGION_INOUT" and event["region_type"] == "CAR":
+            txt_file = f"{self.description_file_path}/car_inout.txt"
+            return str(CarInoutTemplate(txt_file, event_embed, self.area_descriptor, ts))
+        elif event["event_type"] == "COMPANION":
+            txt_file = f"{self.description_file_path}/companion.txt"
+            return str(CompanionTemplate(txt_file, event_embed, self.area_descriptor))
+        elif event["event_type"] == "INDIVIDUAL_RECEPTION":
+            txt_file = f"{self.description_file_path}/individual_reception.txt"
+            return str(IndividualReceptionTemplate(txt_file, event_embed, self.area_descriptor))
+        else:
+            raise Exception(f"Event type {event['event_type']} not supported.")
+

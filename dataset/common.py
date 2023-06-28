@@ -187,3 +187,47 @@ class PoolSingleton(Singleton):
     def __init__(self, processes=4):
         self.pool = multiprocessing.Pool(processes=processes)
     
+
+# 对bboxes内所有bbox各个坐标求平均，合并为一个bbox返回
+def merge_bboxes_at_each_channel(bboxes, score_thres=0.5):
+    """
+    bboxes: [bbox1, bbox2, ...]
+    bbox: class BoundingBox
+
+    Return a dict of merged bboxes.
+    key: channel, value: BoundingBox
+    
+    Example:
+    >>> bboxes = [BoundingBox(1, 1, 1, 1, 1, 1), BoundingBox(2, 2, 2, 2, 2, 2)]
+    >>> merge_bboxes_at_each_channel(bboxes)
+    {1: BoundingBox(1, 1, 1, 1, 1, 1), 2: BoundingBox(2, 2, 2, 2, 2, 2)}
+    
+    >>> bboxes = [BoundingBox(1, 1, 1, 1, 1, 1), BoundingBox(2, 2, 2, 2, 2, 2), BoundingBox(3, 3, 3, 3, 3, 3)]
+    >>> merge_bboxes_at_each_channel(bboxes)
+    {1: BoundingBox(1, 1, 1, 1, 1, 1), 2: BoundingBox(2, 2, 2, 2, 2, 2), 3: BoundingBox(3, 3, 3, 3, 3, 3)}
+    """
+    # 使用numpy实现求所有bbox的各个坐标的平均值
+    ch_bbox_map = {}  # k: channel, v: [BoundingBox...]
+    bbox_merge = {}  # k: channel, v: BoundingBox
+
+    # fill ch_bbox_map with data
+    for bbox in bboxes:
+        ch_bbox_map.setdefault(bbox.channel, []).append(bbox)
+    
+    # merge at each channel
+    for channel, _bboxes in ch_bbox_map.items():
+        # 按照bbox.score由高到低排序
+        _bboxes = sorted(_bboxes, key=lambda bbox: bbox.score, reverse=True)
+
+        box_m = _bboxes[0]
+        for bbox in _bboxes[1:]:
+            if bbox.score < score_thres:
+                continue
+
+            box_m.merge_by_avg(bbox)
+        
+        # 更新bbox_merge
+        bbox_merge[channel] = box_m
+
+    return bbox_merge
+

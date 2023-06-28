@@ -6,7 +6,7 @@ from glob import glob
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from descrption_generator import ImageObject, PromptDescriptor
+from descrption_generator import ImageObject, PromptDescriptor, PromptDescriptorV1
 from region_descriptor import AreaDescriptor
 from gen_grid_cameras_map import FastGridRegion, get_best_camera_views
 
@@ -160,10 +160,11 @@ class ImageDescriptor(object):
 
 
 class EventDataset(Dataset):
-    def __init__(self, store_info_path, car_pose, new_xy_path, events_file, video_path, dataset_path, grid_cameras_map_path):
+    def __init__(self, store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path, grid_cameras_map_path):
         self.store_info_path = store_info_path
         self.car_pose = car_pose
         self.xy = new_xy_path
+        self.pid_output_path = pid_output_path
 
         self.events_file = events_file
 
@@ -186,7 +187,8 @@ class EventDataset(Dataset):
         self.area_descriptor = AreaDescriptor(area_anno_path, car_pose)
 
         # Get instacne of prompt descriptor
-        self.prompt_descriptor = PromptDescriptor(osp.join(osp.dirname(__file__), "../prompt_templates"), self.area_descriptor)
+        # self.prompt_descriptor = PromptDescriptor(osp.join(osp.dirname(__file__), "../prompt_templates"), self.area_descriptor)
+        self.prompt_descriptor = PromptDescriptorV1(osp.join(osp.dirname(__file__), "../prompt_templates"), self.area_descriptor, pid_output_path)
 
         self.label_path = osp.join(self.dataset_path, "label.json")
 
@@ -423,18 +425,19 @@ class EventDataset(Dataset):
                         if not osp.exists(img_file):
                             continue
                         # img = cv2.imread(img_file)
-                        imgs.append(img_file)
+                        imgs.append((channel, img_file))
 
                 # 将图片注册到descriptor中
-                for img_file in imgs:
+                for channel, img_file in imgs:
                     img_name = osp.basename(img_file)
                     self.img_descriptor.register(org_img_path=img_file, img_name=img_name)
 
                     # 5.根据事件生成图片的描述
-                    description = self.prompt_descriptor.generate_prompt(event, ts)
+                    description = self.prompt_descriptor.generate_prompt(event, channel, ts)
 
-                    # 6.将描述添加到所有channels的图片的描述中
-                    self.img_descriptor.add_description(img_file, description)
+                    # 6.将描述添加到当前channel的图片的描述中
+                    if description:
+                        self.img_descriptor.add_description(img_file, description)
     
     def create_dataset(self, ):
         """ 该函数用于生成dataset对应的imgs和labels
@@ -485,6 +488,7 @@ def parse_arguments():
     parser.add_argument('--store_infos_path', type=str, help="store_infos_path", default="/ssd/wphu/StoreInfos/GACNE/guangzhou/xhthwk")
     parser.add_argument('--car_pose', type=str, help="path of pose.json", default="")
     parser.add_argument('--new_xy_path', type=str, help="path of new_xy", default="")
+    parser.add_argument('--pid_output_path', type=str, help="path of pid_output", default="")
     parser.add_argument('--events_file', type=str, help="events.pb path or gt_file path", default="")
     parser.add_argument('--video_path', type=str, help="video path", default="")
     parser.add_argument('--dataset_path', type=str, help="output path", default="./data/")
@@ -517,6 +521,7 @@ if __name__ == "__main__":
         args.store_infos_path,
         args.car_pose,
         args.new_xy_path, 
+        args.pid_output_path,
         args.events_file, 
         args.video_path, 
         args.dataset_path, 
