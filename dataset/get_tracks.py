@@ -182,6 +182,7 @@ class TrackLoader:
     def __init__(self, pid_output_path):
         self.pid_output_path = pid_output_path
         self.tracks = {}  # pid2trk
+        self.pid_track_infos = {}  # pid: [svids, bboxes]
 
     def load(self, path):
         """
@@ -210,7 +211,12 @@ class TrackLoader:
             - svids is sorted by ts
         """
         # get all svids
-        svids, _ = self.parse_pid_track_infos(pid)
+        if pid in self.pid_track_infos:
+            svids, _ = self.pid_track_infos[pid]
+            return svids
+        
+        svids, _bboxes = self.parse_pid_track_infos(pid)
+        self.pid_track_infos.update({pid: [svids, _bboxes]})
         return svids
 
     def get_bboxes(self, pid, ts):
@@ -227,8 +233,12 @@ class TrackLoader:
             - box: class, box coords format: [x1, y1, x2, y2]
         """
         # get all bboxes
-        _, bboxes = self.parse_pid_track_infos(pid)
-
+        if pid in self.pid_track_infos:
+            _, bboxes = self.pid_track_infos[pid]
+            return bboxes.get(ts, [])
+        
+        _svids, bboxes = self.parse_pid_track_infos(pid)
+        self.pid_track_infos.update({pid: [_svids, bboxes]})
         return bboxes.get(ts, [])
 
     def parse_pid_track_infos(self, pid):

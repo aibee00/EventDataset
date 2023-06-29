@@ -3,8 +3,13 @@ import os
 import os.path as osp
 import cv2
 from glob import glob
+import numpy as np
+import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
+import yaml
+from get_tracks import TrackLoader
+from prompt_encoder import PromptEncoder
 
 from descrption_generator import ImageObject, PromptDescriptor, PromptDescriptorV1
 from region_descriptor import AreaDescriptor
@@ -14,7 +19,7 @@ from get_events import EventInfoFactoryImpl, GTEventInfoFactoryImpl, EVENTS_TYPE
 import json
 import shutil
 
-from common import STORE_INOUT_NEAR_TIME, duration, hms2sec, ts_to_string, get_location, get_overlap_time, get_pid_loc_time_range, logger
+from common import STORE_INOUT_NEAR_TIME, duration, hms2sec, merge_bboxes_at_one_channel, ts_to_string, get_location, get_overlap_time, get_pid_loc_time_range, logger
 
 
 # 给出pid、location和时间段，返回覆盖到该location的所有channels
@@ -160,7 +165,7 @@ class ImageDescriptor(object):
 
 
 class EventDataset(Dataset):
-    def __init__(self, store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path, grid_cameras_map_path):
+    def __init__(self, store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path, grid_cameras_map_path, version="v1"):
         self.store_info_path = store_info_path
         self.car_pose = car_pose
         self.xy = new_xy_path
@@ -170,6 +175,8 @@ class EventDataset(Dataset):
 
         self.video_path = video_path
         self.dataset_path = dataset_path
+
+        self.version = version.lower()
 
         area_anno_path = osp.join(store_info_path, 'area_annotation.json')
 
@@ -187,14 +194,32 @@ class EventDataset(Dataset):
         self.area_descriptor = AreaDescriptor(area_anno_path, car_pose)
 
         # Get instacne of prompt descriptor
-        # self.prompt_descriptor = PromptDescriptor(osp.join(osp.dirname(__file__), "../prompt_templates"), self.area_descriptor)
-        self.prompt_descriptor = PromptDescriptorV1(osp.join(osp.dirname(__file__), "../prompt_templates"), self.area_descriptor, pid_output_path)
+        if version.lower() == "v0":
+            self.prompt_descriptor = PromptDescriptor(osp.join(osp.dirname(__file__), "../prompt_templates"), self.area_descriptor)
+        else:
+            self.prompt_descriptor = PromptDescriptorV1(osp.join(osp.dirname(__file__), "../prompt_templates"), self.area_descriptor, pid_output_path)
 
         self.label_path = osp.join(self.dataset_path, "label.json")
 
         # Load grid_cameras_map
         with open(grid_cameras_map_path, 'r') as f:
             self.grid_cameras_map = json.load(f)
+
+        # Get instance of track loader
+        self.track_loader = TrackLoader(pid_output_path)
+
+        # 加载encoder_config
+        config_path = osp.join(osp.dirname(__file__), 'config.yaml')
+        assert osp.exists(config_path), f"config.yaml not found in {osp.dirname(__file__)}"
+        with open(config_path, 'r') as f:
+            cfg = yaml.load(f.read(), Loader=yaml.FullLoader).get('PromptEncoder', {})
+        print(f"Loaded PromptEncoder Config: {cfg}")
+        self.prompt_encoder = PromptEncoder(
+            embed_dim=cfg.get('embed_dim', 64),
+            image_embedding_size=cfg.get('image_embedding_size', (32,32)),
+            input_image_size=cfg.get('input_image_size', (32,32)),
+            mask_in_chans=cfg.get('mask_in_chans', 1)
+        )
 
     @property
     def events_info(self):
@@ -438,6 +463,116 @@ class EventDataset(Dataset):
                     # 6.将描述添加到当前channel的图片的描述中
                     if description:
                         self.img_descriptor.add_description(img_file, description)
+
+    def _get_pid_bbox_embeddings(self, pid, valid_ts_set):
+        """ 获取pid在所有valid_ts_set时刻的bboxes的embeddings
+
+        Args:
+            pid (int): pid
+            valid_ts_set (set): 有效时刻集合
+
+        Returns:
+            dict: {ch: {ts: List(bbox_embedding)}}
+        """
+        pid_bboxes = {}
+        for ts in valid_ts_set:
+            bboxes = self.track_loader.get_bboxes(pid, ts)
+            if bboxes is None:
+                continue
+
+            # 把这一秒的所有bboxes进行合并by average, 返回{ch: BoundingBox}
+            bboxes = merge_bboxes_at_one_channel(bboxes)
+
+            for ch, bbox in bboxes.items():
+                # 将bboxes中的BoundingBox转为四个角点坐标的形式并转为tensor
+                bbox = bbox.convert_coords_to_4_corners_points().coords  # [[x1,y1],[x2,y1],[x2,y2],[x1,y2]]
+                pid_bboxes.setdefault(ch, {}).setdefault(ts, []).append(bbox)
+            
+        # 对每个ch的所有bboxes并行进行位置编码
+        for ch, ts_bbox_dict in pid_bboxes.items():
+            bboxes_list = []
+            for ts, bboxes in ts_bbox_dict.items():
+                bboxes_list.append(bboxes)
+            bboxes_tensor = torch.tensor(bboxes_list)  # shape(n_ts, 4, 2)
+
+            # 位置编码
+            bboxes_embeds = self.prompt_encoder.get_box_embed(bboxes_tensor)
+
+            # 更新pid_bboxes
+            for i, ts in enumerate(ts_bbox_dict.keys()):
+                pid_bboxes[ch][ts] = bboxes_embeds[i].tolist()
+
+        return pid_bboxes
+
+    def _process_per_event_v1(self, event):
+        """ 处理每个事件
+        处理过程:
+            1.根据事件获取有效时刻和有效pid
+            2.根据pid和时刻可以获得位置
+            3.根据位置可以获得有效(有覆盖的)channels
+            4.根据每个时刻ts的有效channels可以获得图片
+            5.根据事件生成图片的描述
+            6.将描述添加到所有channels的图片的描述中
+
+        Notes v1 new:
+            将一个pid的所有ts的bboxes预处理以加快处理速度
+        """
+        # 1.根据事件获取有效时刻集合和有效pid
+        valid_pids, valid_ts_set = self.get_valid_ts_set(event)
+
+        # 将valid_pids中所有pid的每个ts的各个channel的bboxes进行预处理
+        pid_bbox_embeddings = {}  # {pid: {ch: {ts: bbox_embedding}}}
+        for pid in valid_pids:
+            # pid所有ts的所有bboxes
+            pid_bbox_embeddings[pid] = self._get_pid_bbox_embeddings(pid, valid_ts_set)
+
+        # 处理valid_time_ranges中的每个ts
+        for ts in valid_ts_set:
+            for pid in valid_pids:
+                # 2.根据pid和时刻可以获得位置
+                locs = self._get_location(pid)
+
+                # 3.根据位置可以获得有效(有覆盖的)channels
+                channels = get_cover_channels(self.grid_cameras_map, pid, locs, ts)
+                
+                if channels is None:
+                    continue
+
+                # 4.根据每个时刻ts的有效channels可以获得图片
+                imgs = []
+                # bar = tqdm(channels, desc=f"Processing {len(channels)} channels")
+                for channel in channels:
+                    video_dirs = glob(osp.join(self.video_path, "{}_*".format(channel)))
+                    for video_dir in video_dirs:
+                        # logger.info(f"Processing video in: {video_dir}")
+                        ch, time_str = video_dir.split("/")[-1].split("_")
+                        date, time_start = time_str[:-6], time_str[-6:]
+                        v_time_range = get_video_time_range(time_start, offset=5*60)
+
+                        # 如果ts不在该video的时间段内，则跳过
+                        if ts not in set(range(v_time_range[0], v_time_range[1])):
+                            continue
+
+                        ts_hms = ts_to_string(ts, sep="")
+
+                        img_name = f"{ch}_{date}{ts_hms}.jpg"
+                        img_file = osp.join(video_dir, img_name)
+                        if not osp.exists(img_file):
+                            continue
+                        # img = cv2.imread(img_file)
+                        imgs.append((channel, img_file))
+
+                # 将图片注册到descriptor中
+                for channel, img_file in imgs:
+                    img_name = osp.basename(img_file)
+                    self.img_descriptor.register(org_img_path=img_file, img_name=img_name)
+
+                    # 5.根据事件生成图片的描述
+                    description = self.prompt_descriptor.generate_prompt(event, pid_bbox_embeddings, channel, ts)
+
+                    # 6.将描述添加到当前channel的图片的描述中
+                    if description:
+                        self.img_descriptor.add_description(img_file, description)
     
     def create_dataset(self, ):
         """ 该函数用于生成dataset对应的imgs和labels
@@ -463,8 +598,15 @@ class EventDataset(Dataset):
 
             # 迭代地获取每个events_in_time_clip的信息
             for event in tqdm(events_in_time_clip, desc=f"[{len(covered_time_clips)}clips]Processing events in each clip"):
+                # if event['event_type'] == 'COMPANION':
+                #     continue
                 # 将事件转化为描述添加到各个channels的图片中去
-                self._process_per_event(event)
+                if self.version == "v0":
+                    self._process_per_event(event)
+                elif self.version == "v1":
+                    self._process_per_event_v1(event)
+                else:
+                    raise ValueError(f"version: {self.version} is not supported")
 
         # 报存description标注结果
         self.save_img_descriptions()
@@ -492,6 +634,7 @@ def parse_arguments():
     parser.add_argument('--events_file', type=str, help="events.pb path or gt_file path", default="")
     parser.add_argument('--video_path', type=str, help="video path", default="")
     parser.add_argument('--dataset_path', type=str, help="output path", default="./data/")
+    parser.add_argument('--version', type=str, help="version", default="v1")
     parser.add_argument('--viz', action='store_true', help="viz img and prompt")
     return parser.parse_args()
 
@@ -525,7 +668,8 @@ if __name__ == "__main__":
         args.events_file, 
         args.video_path, 
         args.dataset_path, 
-        save_dir
+        save_dir,
+        version=args.version
     )
 
     # 如果数据集不存在，则创建它

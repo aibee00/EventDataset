@@ -289,14 +289,20 @@ class PromptDescriptorV1(PromptDescriptor):
             mask_in_chans=cfg.get('mask_in_chans', 1)
         )
 
-    def convert_pid_to_bbox_embedding(self, pid, ts, channel):
-        """ Convert pid to its bbox_embedding with position encoding
+    def _convert_pid_to_bbox_embedding(self, pid, ts, channel):
+        """ Deprecated
+        Convert pid to its bbox_embedding with position encoding
+        
         Args:
              pid: str
              ts: int
              channel: str
+        
         Returns:
              embedding: List([4])
+
+        Note:
+            这个函数是计算每个ts的bbox的位置编码，速速太慢；且因为外部循环先迭代ts再迭代pid，所以存在计算冗余
         """
         # 根据pid和ts获取带有channel的boxes集合
         bboxes = self.track_loader.get_bboxes(pid, ts)
@@ -323,22 +329,54 @@ class PromptDescriptorV1(PromptDescriptor):
         bbox_embed = bbox_embed.tolist()
 
         return bbox_embed
+    
+    def _get_pid_bbox_embedding(self, pid_bbox_embeddings, pid, ts, ch):
+        """ 获取某个pid的所有有效时刻所有channel的bboxes，并进行位置编码
 
-    def generate_prompt(self, event, channel, ts=None):
+        Args:
+            pid: str
+            ts: int
+            ch: str
+        
+        Returns:
+            bbox_embedding: List()
+        """
+        bbox_embeding = []
+        if pid not in pid_bbox_embeddings:
+            return bbox_embeding
+        
+        if ch not in pid_bbox_embeddings[pid]:
+            return bbox_embeding
+        
+        if ts not in pid_bbox_embeddings[pid][ch]:
+            return bbox_embeding
+        
+        return pid_bbox_embeddings[pid][ch][ts]
+
+    def generate_prompt(self, event, pid_bbox_embeddings, channel, ts=None) -> str:
         event_embed = deepcopy(event)
-
-        if not event_embed:
-            return ""
 
         # 将pid用bbox_embedding表示
         if event["event_type"] == "COMPANION":
             pids = []
             for pid in event["pids"]:
-                bbox_embed = self.convert_pid_to_bbox_embedding(pid, ts, channel)
+                bbox_embed = self._get_pid_bbox_embedding(pid_bbox_embeddings, pid, ts, channel)
+
+                if len(bbox_embed) == 0:
+                    continue
+
                 pids.append(f"<{str(bbox_embed)}>")
+            
+            if not pids:
+                return ""
+            
             event_embed["pids"] = pids
         else:
-            bbox_embed = self.convert_bbox_to_embedding(event["pid"], ts, channel)
+            bbox_embed = self._get_pid_bbox_embedding(pid_bbox_embeddings, event["pid"], ts, channel)
+            
+            if len(bbox_embed) == 0:
+                return ""
+            
             event_embed["pid"] = f"<{str(bbox_embed)}>"
 
         if event["event_type"] == "STORE_INOUT":
