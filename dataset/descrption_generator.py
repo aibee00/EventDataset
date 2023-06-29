@@ -3,7 +3,7 @@ import os.path as osp
 import cv2
 import numpy as np
 from abc import ABCMeta, abstractmethod
-from common import STORE_INOUT_NEAR_TIME, cv2AddChineseText, merge_bboxes_at_each_channel
+from common import STORE_INOUT_NEAR_TIME, cv2AddChineseText, merge_bboxes_at_one_channel
 from dataset.prompt_encoder import PromptEncoder
 from get_tracks import TrackLoader
 import torch
@@ -289,32 +289,57 @@ class PromptDescriptorV1(PromptDescriptor):
             mask_in_chans=cfg.get('mask_in_chans', 1)
         )
 
-    def generate_prompt(self, event, channel, ts=None):
-
+    def convert_pid_to_bbox_embedding(self, pid, ts, channel):
+        """ Convert pid to its bbox_embedding with position encoding
+        Args:
+             pid: str
+             ts: int
+             channel: str
+        Returns:
+             embedding: List([4])
+        """
         # 根据pid和ts获取带有channel的boxes集合
-        bboxes = self.track_loader.get_bboxes(event["pid"], ts)
+        bboxes = self.track_loader.get_bboxes(pid, ts)
 
         # 把这一秒的所有bboxes进行合并by average, 返回{ch: BoundingBox}
-        bboxes = merge_bboxes_at_each_channel(bboxes)
+        bboxes = merge_bboxes_at_one_channel(bboxes, channel)
 
         if channel not in bboxes:
-            return ""
+            return []
 
         bbox = bboxes[channel]
-        # 将bboxes中的BoundingBox转为tensor
-        bbox = bbox.convert_coords_to_4_corners_points().to_tensor()  # [xyxy]
 
-        # 将bbox(shape(4))转为shape(1,1,4)
+        # 将bboxes中的BoundingBox转为四个角点坐标的形式并转为tensor
+        bbox = bbox.convert_coords_to_4_corners_points().get_coords_as_tensor()  # [[x1,y1],[x2,y1],[x2,y2],[x1,y2]]
+
+        # 将bbox(shape(4，2))进行处理，将其进行padding，将其进行reshape(1，4，2）
         bbox = bbox.unsqueeze(0)
 
-        # 将BoundBox进行位置编码, 输入boxes: torch.Size([bz, 4, 2])
+        # 将BoundingBox进行位置编码
         bbox_embed = self.prompt_encoder.get_box_embed(bbox)
         bbox_embed = bbox_embed.squeeze()  # shape(4)
-        bbox_embed = bbox_embed.detach().cpu().numpy().astype(np.int8).tolist()  # shape(4)
 
-        # 把event["pid"]换成对应的bbox_embedding
+        # 将tensor转为list
+        bbox_embed = bbox_embed.tolist()
+
+        return bbox_embed
+
+    def generate_prompt(self, event, channel, ts=None):
         event_embed = deepcopy(event)
-        event_embed["pid"] = f"<{str(bbox_embed)}>"
+
+        if not event_embed:
+            return ""
+
+        # 将pid用bbox_embedding表示
+        if event["event_type"] == "COMPANION":
+            pids = []
+            for pid in event["pids"]:
+                bbox_embed = self.convert_pid_to_bbox_embedding(pid, ts, channel)
+                pids.append(f"<{str(bbox_embed)}>")
+            event_embed["pids"] = pids
+        else:
+            bbox_embed = self.convert_bbox_to_embedding(event["pid"], ts, channel)
+            event_embed["pid"] = f"<{str(bbox_embed)}>"
 
         if event["event_type"] == "STORE_INOUT":
             txt_file = f"{self.description_file_path}/store_inout.txt"
