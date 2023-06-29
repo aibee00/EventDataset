@@ -142,7 +142,7 @@ class BoundingBox:
             if self.__is_xyxy else [self.x, self.y, self.w, self.h]
         return self
     
-    def to_tensor(self,):
+    def get_coords_as_tensor(self,):
         """
         Convert BoundingBox object to tensor
         """
