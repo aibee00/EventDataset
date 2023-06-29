@@ -189,7 +189,7 @@ class PoolSingleton(Singleton):
     
 
 # 对bboxes内所有bbox各个坐标求平均，合并为一个bbox返回
-def merge_bboxes_at_each_channel(bboxes, score_thres=0.5):
+def merge_bboxes_at_one_channel(bboxes, channel=None, score_thres=0.5):
     """
     bboxes: [bbox1, bbox2, ...]
     bbox: class BoundingBox
@@ -215,7 +215,10 @@ def merge_bboxes_at_each_channel(bboxes, score_thres=0.5):
         ch_bbox_map.setdefault(bbox.channel, []).append(bbox)
     
     # merge at each channel
-    for channel, _bboxes in ch_bbox_map.items():
+    for ch, _bboxes in ch_bbox_map.items():
+        if channel and ch != channel:
+            continue
+        
         # 按照bbox.score由高到低排序
         _bboxes = sorted(_bboxes, key=lambda bbox: bbox.score, reverse=True)
 
@@ -227,7 +230,7 @@ def merge_bboxes_at_each_channel(bboxes, score_thres=0.5):
             box_m.merge_by_avg(bbox)
         
         # 更新bbox_merge
-        bbox_merge[channel] = box_m
+        bbox_merge[ch] = box_m
 
     return bbox_merge
 
