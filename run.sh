@@ -13,6 +13,7 @@ CITY=guangzhou
 BRANCH=xhthwk
 DATE=20210717
 TAG=v744.eventgpt
+VER=v2
 
 camera_info_path=/ssd/${USER}/CameraInfos/${BRAND}/${CITY}/${BRANCH}/
 store_infos_path=/ssd/${USER}/StoreInfos/${BRAND}/${CITY}/${BRANCH}/
@@ -53,7 +54,8 @@ python dataset/dataset_generator.py \
     --pid_output_path $pid_output_path \
     --events_file $events \
     --video_path $video_path \
-    --dataset_path $dataset_path 
+    --dataset_path $dataset_path \
+    --version $VER
 
 
 
