@@ -1,12 +1,12 @@
 import os
 import os.path as osp
+import shutil
 import cv2
 import numpy as np
 from abc import ABCMeta, abstractmethod
-from common import STORE_INOUT_NEAR_TIME, cv2AddChineseText, merge_bboxes_at_one_channel
+from common import STORE_INOUT_NEAR_TIME, cv2AddChineseText, merge_bboxes_at_one_channel, logger
 from dataset.prompt_encoder import PromptEncoder
 from get_tracks import TrackLoader
-import torch
 from copy import deepcopy
 import yaml
 
@@ -20,12 +20,13 @@ class ImageObject(object):
         self.img_size = None
         self.img_shape = None
         self.desc = set()
+        self.context = set()
         self.index = 0
 
     def __str__(self) -> str:
         """ 生成label prompt的格式
 
-        prompt格式：{'img': img_path, 'annotation': desc}
+        prompt格式：{'img': img_path, 'annotation': desc, 'context': context}
         """
         return f"{self.prompt}"
     
@@ -33,7 +34,7 @@ class ImageObject(object):
     def prompt(self, ) -> dict:
         """ 生成label prompt的样式
         """
-        return {'img': self.__path, 'annotation': ";".join(self.desc)}
+        return {'img': self.__path, 'annotation': ";".join(self.desc), 'context': ";".join(self.context)}
 
     @property
     def path(self):
@@ -44,6 +45,91 @@ class ImageObject(object):
         self.__path = new_path
 
 
+class MyDict(dict):
+    def __str__(self) -> str:
+        string = "{"
+        for k, v in self.items():
+            k = str(k)
+            v = str(v)
+            string += f"{k}:{v},"
+        string += "}"
+        return string
+
+    def value2str(self,) -> dict:
+        for k, v in self.items():
+            if isinstance(v, ImageObject):
+                self[k] = v.prompt
+            else:
+                self[k] = str(v)
+        return self
+        
+
+class ImageDescriptor(object):
+    def __init__(self, root_path):
+        self.imgs_path = osp.join(root_path, "imgs")
+        if not osp.exists(self.imgs_path):
+            os.makedirs(self.imgs_path)
+        
+        # Table to record img object
+        self.img_table = MyDict()
+        self.__img_num = 0
+
+    @property
+    def img_names(self):
+        return self.img_table.keys()
+
+    @property
+    def total_num(self):
+        return self.__img_num
+    
+    def register(self, org_img_path, img_name):
+        """ 把img_object注册到img_table中
+        """
+        # 保存图片
+        img_path = osp.join(self.imgs_path, img_name)
+        if not osp.exists(img_path):
+            # cv2保存图片
+            logger.info(f"Saving img : {img_name} to {self.imgs_path}...")
+            # 从org_img_path拷贝图片到img_path
+            shutil.copy(org_img_path, img_path)
+        
+        if img_name not in self.img_table:
+            img_object = ImageObject(img_path)
+
+            # update img index
+            img_object.index = self.__img_num
+            self.__img_num += 1
+        
+            # update img_table
+            self.img_table[img_name] = img_object
+
+    def add_description(self, img_path, description, context=None):
+        """ 向图片index添加描述
+        """
+        if not os.path.exists(img_path):
+            raise ValueError(f"Image {img_path} not exists")
+        
+        img_name = osp.basename(img_path)
+        if img_name not in self.img_table:
+            logger.error(f"Image {img_name} not in img_table")
+            return 
+        
+        # Update self.img_table中的img_object的描述属性
+        img_object = self.img_table.get(img_name)
+        img_object.desc.add(description)
+
+        # Add context to img_object
+        if context is not None and context != "" and context not in img_object.context:
+            img_object.context.add(context)
+
+    def update_dataset_path(self, new_dataset_path):
+        """ 替换img_table中的img_object的path层空间
+        """
+        for img_name, img_object in self.img_table.items():
+            img_object.path = osp.join(new_dataset_path, "imgs", img_name)
+
+
+########################################## Begin Template Class Define ####################################
 # 带参数的装饰器
 def wrapper_str(func):
     def wrapper(self, *args, **kwargs):
@@ -189,6 +275,28 @@ class IndividualReceptionTemplate(Template):
         template = template.format(self.event['staff_id'], self.event['pid'])
         
         return template   
+    
+
+class ContextTemplate(Template):
+
+    def __init__(self, template_file, event, area_descriptor=None):
+        super().__init__(template_file, event, area_descriptor)
+
+    @wrapper_str
+    def __str__(self):
+        with open(self.template_file, 'r') as f:
+            template = f.read()
+        
+        bbox = None
+        pid_bboxes = self.event.get('pid_bboxes', None)
+        if pid_bboxes:
+            bbox = pid_bboxes.get(self.event['pid'], None)
+
+        object_name = "Person"
+        
+        template = template.format(object_name, self.event['pid'], bbox)
+        
+        return template
 
 
 class PromptDescriptor(object):
@@ -400,3 +508,126 @@ class PromptDescriptorV1(PromptDescriptor):
         else:
             raise Exception(f"Event type {event['event_type']} not supported.")
 
+
+class PromptDescriptorV2(PromptDescriptor):
+
+    """ V2 版本说明
+    
+    这个版本主要是实现:
+        - 将pid的名字替换为该pid的body_patch的box归一化后的表示，
+        - box归一化是指坐标占比(based on img.shape)
+    """
+
+    def __init__(self, description_file_path, area_descriptor, pid_output_path):
+        super().__init__(description_file_path, area_descriptor)
+
+        self.track_loader = TrackLoader(pid_output_path)
+
+
+    def _normalize_pid_bboxes(self, w, h, pid, ts, channel):
+        """ 
+        Normalize all bboxes of pid
+        
+        Args:
+             pid: str
+             ts: int
+             channel: str
+        
+        Returns:
+             embedding: List([4])
+        """
+        def get_norm_box(bbox, w, h):
+            """ 
+            Normalize a bbox
+            
+            Args:
+                bbox: List([4])
+                w: int
+                h: int
+            
+            Returns:
+                embedding: List([4])
+            """
+            x1, y1, x2, y2 = bbox
+            x1 = x1 / w
+            y1 = y1 / h
+            x2 = x2 / w
+            y2 = y2 / h
+            return [x1, y1, x2, y2]
+
+        # 根据pid和ts获取带有channel的boxes集合
+        bboxes = self.track_loader.get_bboxes(pid, ts)
+
+        # 把这一秒的所有bboxes进行合并by average, 返回{ch: BoundingBox}
+        bboxes = merge_bboxes_at_one_channel(bboxes, channel)
+
+        if channel not in bboxes:
+            return []
+
+        bbox = bboxes[channel].xyxy
+
+        # 将BoundingBox进行归一化
+        bbox_norm = get_norm_box(bbox, w, h)
+
+        return bbox_norm
+
+    def generate_prompt(self, event, ts=None) -> str:
+
+        if event["event_type"] == "STORE_INOUT":
+            txt_file = f"{self.description_file_path}/store_inout.txt"
+            return str(StoreInoutTemplate(txt_file, event, self.area_descriptor, ts))
+        elif event["event_type"] == "REGION_VISIT":
+            txt_file = f"{self.description_file_path}/region_visit.txt"
+            return str(RegionVisitTemplate(txt_file, event, self.area_descriptor))
+        elif event["event_type"] == "REGION_INOUT" and event["region_type"] == "INTERNAL_REGION":
+            txt_file = f"{self.description_file_path}/region_inout.txt"
+            return str(RegionInoutTemplate(txt_file, event, self.area_descriptor, ts))
+        elif event["event_type"] == "REGION_INOUT" and event["region_type"] == "CAR":
+            txt_file = f"{self.description_file_path}/car_inout.txt"
+            return str(CarInoutTemplate(txt_file, event, self.area_descriptor, ts))
+        elif event["event_type"] == "COMPANION":
+            txt_file = f"{self.description_file_path}/companion.txt"
+            return str(CompanionTemplate(txt_file, event, self.area_descriptor))
+        elif event["event_type"] == "INDIVIDUAL_RECEPTION":
+            txt_file = f"{self.description_file_path}/individual_reception.txt"
+            return str(IndividualReceptionTemplate(txt_file, event, self.area_descriptor))
+        else:
+            raise Exception(f"Event type {event['event_type']} not supported.")
+        
+    def generate_context(self, event, ts, channel, img_shape):
+        """ 生成背景描述
+
+        Args:
+            event: Dict
+            ts: int
+            channel: str
+            img_shape: List([3])
+        
+        Returns:
+            context: str
+        """
+
+        h, w, _ = img_shape
+
+        # 将pid用bbox_embedding表示
+        if event["event_type"] == "COMPANION":
+            for pid in event["pids"]:
+                bbox_norm = self._normalize_pid_bboxes(w, h, pid, ts, channel)
+
+                if len(bbox_norm) == 0:
+                    continue
+
+                bbox_norm = "[%.2f, %.2f, %.2f, %.2f]" % tuple(bbox_norm)
+                event.setdefault("pid_bboxes", {})[pid] = bbox_norm
+
+        else:
+            bbox_norm = self._normalize_pid_bboxes(w, h, event["pid"], ts, channel)
+            
+            if len(bbox_norm) == 0:
+                return ""
+            
+            bbox_norm = "[%.2f, %.2f, %.2f, %.2f]" % tuple(bbox_norm)
+            event.setdefault("pid_bboxes", {})[event["pid"]] = bbox_norm
+
+        txt_file = f"{self.description_file_path}/context.txt"
+        return str(ContextTemplate(txt_file, event, self.area_descriptor))
