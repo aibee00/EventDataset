@@ -1,9 +1,24 @@
 # 位置编码的配置
+# Encodes prompts for input to SAM's mask decoder.
+
+# Arguments:
+#   embed_dim (int): The prompts' embedding dimension
+#   image_embedding_size (tuple(int, int)): The spatial size of the
+#     image embedding, as (H, W).
+#   input_image_size (int): The padded size of the image as input
+#     to the image encoder, as (H, W).
+#   mask_in_chans (int): The number of hidden channels used for
+#     encoding input masks.
+#   activation (nn.Module): The activation to use when encoding
+#     input masks.
+
+IMAGE_H: 256
+IMAGE_W: 256
 
 PromptEncoder:
-  embed_dim: 64
-  image_embedding_size: [32, 32]
-  input_image_size: [32, 32]
+  embed_dim: 8
+  image_embedding_size: [256, 256]
+  input_image_size: [256, 256]
   mask_in_chans: 1
 
 
