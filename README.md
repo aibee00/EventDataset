@@ -3,10 +3,10 @@
 
 # 2. 创建数据来源
 数据来源目前来自于Store场景下
-- Store Full Benchmark的所有事件的GT
+- Store Full Benchmark 的所有事件的GT
 - Store Full Benchmark 的Video
 
-目前使用GACNE_guangzhou_xhthwk_20210717的数据作为base测试
+目前使用GACNE_guangzhou_xhthwk_20210717的数据作为base测试  
 以后可以扩展到其他Store的数据，甚至其他场景
 
 # 3. How to run
