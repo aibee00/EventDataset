@@ -98,14 +98,17 @@ def viz_img_prompt(dataset_path, dataset_creater):
     
     def get_current_annotation():
         return visualizer.img_annos[list(visualizer.img_annos.keys())[visualizer.current_index]]["annotation"]
+    
+    def get_current_context():
+        return visualizer.img_annos[list(visualizer.img_annos.keys())[visualizer.current_index]]["context"]
 
     def prev_image():
         visualizer.prev_image()
-        return get_current_image(), get_current_annotation(), f"current index: {visualizer.current_index}"
+        return get_current_image(), get_current_annotation(), get_current_context(), f"current index: {visualizer.current_index}"
 
     def next_image():
         visualizer.next_image()
-        return get_current_image(), get_current_annotation(), f"current index: {visualizer.current_index}"
+        return get_current_image(), get_current_annotation(), get_current_context(), f"current index: {visualizer.current_index}"
 
     def save_current_image():
         visualizer.save_current_image()
@@ -116,7 +119,10 @@ def viz_img_prompt(dataset_path, dataset_creater):
             image = gr.Image(value=get_current_image())
         
         with gr.Column():    # 列排列
-            context = gr.Textbox(value=get_current_annotation())
+            annotation = gr.Textbox(value=get_current_annotation())
+
+        with gr.Column():    # 列排列
+            context = gr.Textbox(value=get_current_context())
         
         with gr.Row():       # 行排列
             index = gr.Textbox(value=f"current index: {visualizer.current_index}")
@@ -124,8 +130,8 @@ def viz_img_prompt(dataset_path, dataset_creater):
             next_btn = gr.Button("next")
             save_btn = gr.Button("save")
 
-        next_btn.click(next_image, inputs=[], outputs=[image, context, index])
-        prev_btn.click(prev_image, inputs=[], outputs=[image, context, index])
+        next_btn.click(next_image, inputs=[], outputs=[image, annotation, context, index])
+        prev_btn.click(prev_image, inputs=[], outputs=[image, annotation, context, index])
         save_btn.click(save_current_image)
 
     demo.launch(share=True)
