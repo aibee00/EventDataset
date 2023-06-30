@@ -288,13 +288,23 @@ class ContextTemplate(Template):
             template = f.read()
         
         bbox = None
-        pid_bboxes = self.event.get('pid_bboxes', None)
-        if pid_bboxes:
-            bbox = pid_bboxes.get(self.event['pid'], None)
-
         object_name = "Person"
-        
-        template = template.format(object_name, self.event['pid'], bbox)
+
+        if self.event['event_type'] == "COMPANION":
+            template_merge = ""
+            pids = self.event['pids']
+            for pid in pids:
+                pid_bboxes = self.event.get('pid_bboxes', None)
+                if pid_bboxes:
+                    bbox = pid_bboxes.get(pid, None)
+                    template_merge += template.format(object_name, pid, bbox)
+            template = template_merge
+
+        else:
+            pid_bboxes = self.event.get('pid_bboxes', None)
+            if pid_bboxes:
+                bbox = pid_bboxes.get(self.event['pid'], None)
+            template = template.format(object_name, self.event['pid'], bbox)
         
         return template
 
