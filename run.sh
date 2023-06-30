@@ -13,7 +13,13 @@ CITY=guangzhou
 BRANCH=xhthwk
 DATE=20210717
 TAG=v744.eventgpt
-VER=v3
+VER=v2
+
+##### 版本说明 #####
+# - v0: 把Prompt描述更新到label
+# - v1: 加入bbox的位置编码(参考SegmentAnthing)
+# - v2: 加入bbox的归一化(参考LLaVA)
+# - v3: 综合V0,V1,V2
 
 camera_info_path=/ssd/${USER}/CameraInfos/${BRAND}/${CITY}/${BRANCH}/
 store_infos_path=/ssd/${USER}/StoreInfos/${BRAND}/${CITY}/${BRANCH}/

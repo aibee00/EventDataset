@@ -697,11 +697,11 @@ class EventDatasetV2(EventDatasetV0):
 
 class EventDatasetV3(EventDatasetV0):
 
-    """ V2 版本说明
-    
-    这个版本主要是实现:
-        - 将pid的名字替换为该pid的body_patch的box归一化后的表示，
-        - box归一化是指坐标占比(based on img.shape)
+    """ V3 版本说明
+        - v3: 综合V0,V1,V2
+        - v0: 把Prompt描述更新到label
+        - v1: 加入bbox的位置编码(参考SegmentAnthing)
+        - v2: 加入bbox的归一化(参考LLaVA)
     """
 
     def __init__(self, store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path, grid_cameras_map_path):
