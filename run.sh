@@ -1,4 +1,6 @@
 #!/bin/bash
+set -eo pipefail
+set -x
 
 # USER=${1}
 # BRAND=${2}
