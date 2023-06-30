@@ -291,14 +291,14 @@ class ContextTemplate(Template):
         object_name = "Person"
 
         if self.event['event_type'] == "COMPANION":
-            template_merge = ""
+            template_merge = []
             pids = self.event['pids']
             for pid in pids:
                 pid_bboxes = self.event.get('pid_bboxes', None)
                 if pid_bboxes:
                     bbox = pid_bboxes.get(pid, None)
-                    template_merge += template.format(object_name, pid, bbox)
-            template = template_merge
+                    template_merge.append(template.format(object_name, pid, bbox))
+            template = ",".join(template_merge)
 
         else:
             pid_bboxes = self.event.get('pid_bboxes', None)
