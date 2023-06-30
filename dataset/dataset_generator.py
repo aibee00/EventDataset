@@ -13,7 +13,7 @@ from abc import ABCMeta, abstractclassmethod
 from get_tracks import TrackLoader
 from prompt_encoder import PromptEncoder
 
-from descrption_generator import ImageDescriptor, PromptDescriptor, PromptDescriptorV1, PromptDescriptorV2
+from descrption_generator import ImageDescriptor, PromptDescriptor, PromptDescriptorV1, PromptDescriptorV2, PromptDescriptorV3
 from region_descriptor import AreaDescriptor
 from gen_grid_cameras_map import FastGridRegion, get_best_camera_views
 
@@ -656,9 +656,202 @@ class EventDatasetV2(EventDatasetV0):
 
                     # 6.将描述添加到当前channel的图片的描述中
                     if description:
+                        other_attributes = {}
                         context = self.prompt_descriptor.generate_context(event, ts, channel, self.img_shape)
+                        other_attributes.update({'context': context})
                         
-                        self.img_descriptor.add_description(img_file, description, context)
+                        self.img_descriptor.add_description(img_file, description, other_attributes)
+
+    def create_dataset(self, ):
+        """ 该函数用于生成dataset对应的imgs和labels
+
+        如果数据集已经生成，则不用重复运行该函数；
+        如果数据集尚未生成，运行该函数后，将会在self.dataset_path目录下生成：
+            imgs: 用于保存所有含有事件的图片；
+            label.json: 用于保存对所有图片的描述；
+        
+        运行该函数的前提：
+            假设我们已经从video中按照每秒钟一帧的方式转换成了各个channels的所有图片；
+            并按照channel和5分钟切片放到不同文件夹下，文件夹示例: [ch01010_20210728123500, ch01008_20210728094000, ....]
+            文件夹下的图片命名示例: [ch01001_20210728142051.jpg  ch01001_20210728142102.jpg  ch01001_20210728142109.jpg ...]
+        """
+
+        # 获取有事件覆盖的所有时间段
+        covered_time_clips = self.get_all_time_covered_by_events()
+
+        # 迭代covered_time_clips中的每个时间段，获取每个time_clip时间段中发生的所有事件
+        for time_clip in tqdm(covered_time_clips, desc="Processing time_clips"):
+            # 获取事件，返回迭代器
+            events_in_time_clip = self.get_events_in_time_slice(time_clip)
+
+            # 迭代地获取每个events_in_time_clip的信息
+            for event in tqdm(events_in_time_clip, desc=f"[{len(covered_time_clips)}clips]Processing events in each clip"):
+                # if event['event_type'] != 'STORE_INOUT':
+                #     continue
+                # 将事件转化为描述添加到各个channels的图片中去
+                self._process_per_event(event)
+
+        # 报存description标注结果
+        self.save_img_descriptions()
+
+
+class EventDatasetV3(EventDatasetV0):
+
+    """ V2 版本说明
+    
+    这个版本主要是实现:
+        - 将pid的名字替换为该pid的body_patch的box归一化后的表示，
+        - box归一化是指坐标占比(based on img.shape)
+    """
+
+    def __init__(self, store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path, grid_cameras_map_path):
+        super().__init__(store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path)
+
+        # Get instance of prompt descriptor
+        self.prompt_descriptor = PromptDescriptorV3(osp.join(osp.dirname(__file__), "../prompt_templates"), self.area_descriptor, pid_output_path)
+
+        # Load grid_cameras_map
+        with open(grid_cameras_map_path, 'r') as f:
+            self.grid_cameras_map = json.load(f)
+
+        # Get instance of track loader
+        self.track_loader = TrackLoader(pid_output_path)
+
+        # Get img shape
+        channel_folder = os.listdir(self.video_path)[0]
+        img_path = glob(osp.join(self.video_path, channel_folder, "*"))[0]
+        self.img_shape = cv2.imread(img_path).shape
+
+        # 加载encoder_config
+        config_path = osp.join(osp.dirname(__file__), 'config.yaml')
+        assert osp.exists(config_path), f"config.yaml not found in {osp.dirname(__file__)}"
+        with open(config_path, 'r') as f:
+            cfg = yaml.load(f.read(), Loader=yaml.FullLoader).get('PromptEncoder', {})
+        print(f"Loaded PromptEncoder Config: {cfg}")
+        self.prompt_encoder = PromptEncoder(
+            embed_dim=cfg.get('embed_dim', 64),
+            image_embedding_size=self.img_shape[:2],
+            input_image_size=self.img_shape[:2],
+            mask_in_chans=cfg.get('mask_in_chans', 1)
+        )
+
+    def _get_pid_bbox_embeddings(self, pid, valid_ts_set):
+        """ 获取pid在所有valid_ts_set时刻的bboxes的embeddings
+
+        Args:
+            pid (int): pid
+            valid_ts_set (set): 有效时刻集合
+
+        Returns:
+            dict: {ch: {ts: List(bbox_embedding)}}
+        """
+        pid_bboxes = {}
+        for ts in valid_ts_set:
+            bboxes = self.track_loader.get_bboxes(pid, ts)
+            if bboxes is None:
+                continue
+
+            # 把这一秒的所有bboxes进行合并by average, 返回{ch: BoundingBox}
+            bboxes = merge_bboxes_at_one_channel(bboxes)
+
+            for ch, bbox in bboxes.items():
+                # 将bboxes中的BoundingBox转为四个角点坐标的形式并转为tensor
+                bbox = bbox.convert_coords_to_4_corners_points().coords  # [[x1,y1],[x2,y1],[x2,y2],[x1,y2]]
+                pid_bboxes.setdefault(ch, {}).setdefault(ts, []).append(bbox)
+            
+        # 对每个ch的所有bboxes并行进行位置编码
+        for ch, ts_bbox_dict in pid_bboxes.items():
+            bboxes_list = []
+            for ts, bboxes in ts_bbox_dict.items():
+                bboxes_list.append(bboxes)
+            bboxes_tensor = torch.tensor(np.array(bboxes_list), dtype=torch.float32)  # shape(n_ts, 4, 2)
+
+            # 位置编码
+            bboxes_embeds = self.prompt_encoder.get_box_embed(bboxes_tensor)
+
+            # 更新pid_bboxes
+            for i, ts in enumerate(ts_bbox_dict.keys()):
+                pid_bboxes[ch][ts] = bboxes_embeds[i].tolist()
+
+        return pid_bboxes
+
+    def _process_per_event(self, event):
+        """ 处理每个事件
+        处理过程:
+            1.根据事件获取有效时刻和有效pid
+            2.根据pid和时刻可以获得位置
+            3.根据位置可以获得有效(有覆盖的)channels
+            4.根据每个时刻ts的有效channels可以获得图片
+            5.根据事件生成图片的描述
+            6.将描述添加到所有channels的图片的描述中
+
+        """
+        # 1.根据事件获取有效时刻集合和有效pid
+        valid_pids, valid_ts_set = self.get_valid_ts_set(event)
+
+        # 将valid_pids中所有pid的每个ts的各个channel的bboxes进行预处理
+        pid_bbox_embeddings = {}  # {pid: {ch: {ts: bbox_embedding}}}
+        for pid in valid_pids:
+            # pid所有ts的所有bboxes
+            pid_bbox_embeddings[pid] = self._get_pid_bbox_embeddings(pid, valid_ts_set)
+
+        # 处理valid_time_ranges中的每个ts
+        for ts in valid_ts_set:
+            for pid in valid_pids:
+                # 2.根据pid和时刻可以获得位置
+                locs = self._get_location(pid)
+
+                # 3.根据位置可以获得有效(有覆盖的)channels
+                channels = get_cover_channels(self.grid_cameras_map, pid, locs, ts)
+                
+                if channels is None:
+                    continue
+
+                # 4.根据每个时刻ts的有效channels可以获得图片
+                imgs = []
+                # bar = tqdm(channels, desc=f"Processing {len(channels)} channels")
+                for channel in channels:
+                    video_dirs = glob(osp.join(self.video_path, "{}_*".format(channel)))
+                    for video_dir in video_dirs:
+                        # logger.info(f"Processing video in: {video_dir}")
+                        ch, time_str = video_dir.split("/")[-1].split("_")
+                        date, time_start = time_str[:-6], time_str[-6:]
+                        v_time_range = get_video_time_range(time_start, offset=5*60)
+
+                        # 如果ts不在该video的时间段内，则跳过
+                        if ts not in set(range(v_time_range[0], v_time_range[1])):
+                            continue
+
+                        ts_hms = ts_to_string(ts, sep="")
+
+                        img_name = f"{ch}_{date}{ts_hms}.jpg"
+                        img_file = osp.join(video_dir, img_name)
+                        if not osp.exists(img_file):
+                            continue
+                        # img = cv2.imread(img_file)
+                        imgs.append((channel, img_file))
+
+                # 将图片注册到descriptor中
+                for channel, img_file in imgs:
+                    img_name = osp.basename(img_file)
+                    self.img_descriptor.register(org_img_path=img_file, img_name=img_name)
+
+                    # 5.根据事件生成图片的描述
+                    description = self.prompt_descriptor.generate_prompt(event, ts)
+
+                    # 6.将描述添加到当前channel的图片的描述中
+                    if description:
+                        other_attributes = {}
+
+                        # Get context(str)
+                        context = self.prompt_descriptor.generate_context(event, ts, channel, self.img_shape)
+                        other_attributes.update({'context': context})
+
+                        # Get pid_bbox_embedding(str)
+                        bbox_embedding = self.prompt_descriptor.generate_bbox_embedding(event, pid_bbox_embeddings, channel, ts)
+                        other_attributes.update({'bbox_embedding': bbox_embedding})
+
+                        self.img_descriptor.add_description(img_file, description, other_attributes)
 
     def create_dataset(self, ):
         """ 该函数用于生成dataset对应的imgs和labels

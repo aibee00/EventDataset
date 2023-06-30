@@ -21,12 +21,15 @@ class ImageObject(object):
         self.img_shape = None
         self.desc = set()
         self.context = set()
+        self.bbox_embedding = set()
         self.index = 0
+
+        self.dynamic_attribute_names = set()  # record new added attrbutes
 
     def __str__(self) -> str:
         """ 生成label prompt的格式
 
-        prompt格式：{'img': img_path, 'annotation': desc, 'context': context}
+        prompt格式：{'img': img_path, 'annotation': desc, 'context': context, ...}
         """
         return f"{self.prompt}"
     
@@ -34,7 +37,11 @@ class ImageObject(object):
     def prompt(self, ) -> dict:
         """ 生成label prompt的样式
         """
-        return {'img': self.__path, 'annotation': ";".join(self.desc), 'context': ";".join(self.context)}
+        prompt = {'img': self.path, 'annotation': ";".join(self.desc), 'context': ";".join(self.context),
+                'bbox_embedding': ";".join(self.bbox_embedding)}
+        for attr_name in self.dynamic_attribute_names:
+            prompt[attr_name] = ";".join(getattr(self, attr_name))
+        return prompt
 
     @property
     def path(self):
@@ -43,6 +50,15 @@ class ImageObject(object):
     @path.setter
     def path(self, new_path):
         self.__path = new_path
+
+    def register(self, key: str, value: set = set()):
+        """ Register new attribute into dynamic_attributes if self did not has it
+        """
+        if not hasattr(self, key):
+            setattr(self, key, value)
+            self.dynamic_attribute_names.add(key)
+            print(f"Register Success! New attributes list: {self.dynamic_attribute_names}")
+        print(f"{key} already exists in {self.__name__}")
 
 
 class MyDict(dict):
@@ -103,7 +119,7 @@ class ImageDescriptor(object):
             # update img_table
             self.img_table[img_name] = img_object
 
-    def add_description(self, img_path, description, context=None):
+    def add_description(self, img_path, description, other_attributes={}):
         """ 向图片index添加描述
         """
         if not os.path.exists(img_path):
@@ -119,8 +135,12 @@ class ImageDescriptor(object):
         img_object.desc.add(description)
 
         # Add context to img_object
-        if context is not None and context != "" and context not in img_object.context:
-            img_object.context.add(context)
+        if other_attributes:
+            for name, attribute in other_attributes.items():
+                if not hasattr(img_object, name):
+                    img_object.register(name, set())
+
+                getattr(img_object, name).add(attribute)
 
     def update_dataset_path(self, new_dataset_path):
         """ 替换img_table中的img_object的path层空间
@@ -304,6 +324,38 @@ class ContextTemplate(Template):
             pid_bboxes = self.event.get('pid_bboxes', None)
             if pid_bboxes:
                 bbox = pid_bboxes.get(self.event['pid'], None)
+            template = template.format(object_name, self.event['pid'], bbox)
+        
+        return template
+    
+
+class BboxEmbeddingTemplate(Template):
+
+    def __init__(self, template_file, event, area_descriptor=None):
+        super().__init__(template_file, event, area_descriptor)
+
+    @wrapper_str
+    def __str__(self):
+        with open(self.template_file, 'r') as f:
+            template = f.read()
+        
+        bbox = None
+        object_name = "Person"
+
+        if self.event['event_type'] == "COMPANION":
+            template_merge = []
+            pids = self.event['pids']
+            for pid in pids:
+                pid_bbox_embeddings = self.event.get('pid_bbox_embeddings', None)
+                if pid_bbox_embeddings:
+                    bbox = pid_bbox_embeddings.get(pid, None)
+                    template_merge.append(template.format(object_name, pid, bbox))
+            template = ",".join(template_merge)
+
+        else:
+            pid_bbox_embeddings = self.event.get('pid_bbox_embeddings', None)
+            if pid_bbox_embeddings:
+                bbox = pid_bbox_embeddings.get(self.event['pid'], None)
             template = template.format(object_name, self.event['pid'], bbox)
         
         return template
@@ -641,3 +693,73 @@ class PromptDescriptorV2(PromptDescriptor):
 
         txt_file = f"{self.description_file_path}/context.txt"
         return str(ContextTemplate(txt_file, event, self.area_descriptor))
+    
+
+class PromptDescriptorV3(PromptDescriptorV2):
+
+    """ V3 版本进阶版
+    
+    这一版主要是合并box_norm和bbox_embedding表示, 作为context添加到label中
+    """
+
+    def __init__(self, description_file_path, area_descriptor, pid_output_path):
+        super().__init__(description_file_path, area_descriptor, pid_output_path)
+
+    def generate_prompt(self, event, ts=None) -> str:
+        """ 继承PromptDescriptorV2的.generate_prompt函数
+        """
+        return super().generate_prompt(event, ts)
+    
+    def generate_context(self, event, ts, channel, img_shape):
+        """ 继承PromptDescriptorV2的.generate_context函数
+        """
+        return super().generate_context(event, ts, channel, img_shape)
+    
+    def _get_pid_bbox_embedding(self, pid_bbox_embeddings, pid, ts, ch):
+        """ 获取某个pid的所有有效时刻所有channel的bboxes，并进行位置编码
+
+        Args:
+            pid: str
+            ts: int
+            ch: str
+        
+        Returns:
+            bbox_embedding: List()
+        """
+        bbox_embeding = []
+        if pid not in pid_bbox_embeddings:
+            return bbox_embeding
+        
+        if ch not in pid_bbox_embeddings[pid]:
+            return bbox_embeding
+        
+        if ts not in pid_bbox_embeddings[pid][ch]:
+            return bbox_embeding
+        
+        return pid_bbox_embeddings[pid][ch][ts]
+
+    def generate_bbox_embedding(self, event, pid_bbox_embeddings, channel, ts=None) -> str:
+        """ 生成pid的boundingbox的位置编码embedding
+        """
+        # 生成bbox_embedding表示
+        if event["event_type"] == "COMPANION":
+            for pid in event["pids"]:
+                bbox_embed = self._get_pid_bbox_embedding(pid_bbox_embeddings, pid, ts, channel)
+
+                if len(bbox_embed) == 0:
+                    continue
+
+                event.setdefault("pid_bbox_embeddings", {})[pid] = str(bbox_embed)
+            
+        else:
+            bbox_embed = self._get_pid_bbox_embedding(pid_bbox_embeddings, event["pid"], ts, channel)
+            
+            if len(bbox_embed) == 0:
+                return ""
+            
+            event.setdefault("pid_bbox_embeddings", {})[event["pid"]] = str(bbox_embed)
+        
+        txt_file = f"{self.description_file_path}/bbox_embedding.txt"
+        return str(BboxEmbeddingTemplate(txt_file, event, self.area_descriptor))
+
+
