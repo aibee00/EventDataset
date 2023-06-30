@@ -142,6 +142,27 @@ class ImageDescriptor(object):
 
                 getattr(img_object, name).add(attribute)
 
+                # 如果属性是context或bbox_embedding, 则需要确认img_object.context或者img_object.bbox_embedding中pid是否有重复
+                if name in ["context", "bbox_embedding"]:
+                    attribute = getattr(img_object, name)
+
+                    pid_desc_map = {}
+
+                    for info in attribute:
+                        # 这个info有可能包含多个描述，主要来自批次的pids
+                        SEP = ";"
+
+                        # 找出字符串info中所有在字符'<'和字符'>'中间的部分保存到pids中
+                        for description in info.split(SEP):
+                            for part in description.split("<"):
+                                if '>' in part:
+                                    pid = part.split(">")[0]
+                                    pid_desc_map[pid] = description
+
+                    # Update attribute
+                    setattr(img_object, name, set(pid_desc_map.values()))
+
+
     def update_dataset_path(self, new_dataset_path):
         """ 替换img_table中的img_object的path层空间
         """
@@ -318,7 +339,7 @@ class ContextTemplate(Template):
                 if pid_bboxes:
                     bbox = pid_bboxes.get(pid, None)
                     template_merge.append(template.format(object_name, pid, bbox))
-            template = ",".join(template_merge)
+            template = ";".join(template_merge)
 
         else:
             pid_bboxes = self.event.get('pid_bboxes', None)
