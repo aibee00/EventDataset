@@ -170,9 +170,9 @@ class ExtractImagesFromVideos(object):
                     print("pid: {}, staff: {}, video_path: {}, ts_to_extract length: {}".format(
                         pid, staff, video_path, len(ts_to_extract)))
                     if not osp.exists(video_path):
-                        hdfs_body_path = "/bj/prod/customer/{}/{}/{}/videos/processed/body/{}/{}".format(*(bmk.split('-')), video_mp4)
+                        hdfs_body_path = "/bj_dev/prod/QA/qa_store/store_benchmarks/{}/{}/{}v7/{}/processed/body/{}/{}".format(*(bmk.split('-')), bmk.split('-')[-1], video_mp4)
                         video_face = video_name[:-4] + "*" + ".mp4.cut.mp4"
-                        hdfs_face_path = "/bj/prod/customer/{}/{}/{}/videos/processed/face/{}/{}".format(*(bmk.split('-')), video_face)
+                        hdfs_face_path = "/bj_dev/prod/QA/qa_store/store_benchmarks/{}/{}/{}v7/{}/processed/face/{}/{}".format(*(bmk.split('-')), video_face)
                         print("Warning: {} not found! Downloading from hdfs: {}".format(video_path, hdfs_body_path))
                         try:
                             client.download(hdfs_body_path, video_path)
