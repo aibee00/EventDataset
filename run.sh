@@ -13,7 +13,7 @@ CITY=guangzhou
 BRANCH=xhthwk
 DATE=20210717
 TAG=v744.eventgpt
-VER=v2
+VER=v3
 
 camera_info_path=/ssd/${USER}/CameraInfos/${BRAND}/${CITY}/${BRANCH}/
 store_infos_path=/ssd/${USER}/StoreInfos/${BRAND}/${CITY}/${BRANCH}/
