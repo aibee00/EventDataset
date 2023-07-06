@@ -43,12 +43,18 @@ class ImageObject(object):
     def prompt(self, ) -> dict:
         """ 生成label prompt的样式
         """
-        prompt = {'img': self.path, 'annotation': ";".join(self.desc), 'context': ";".join(self.context),
-                'bbox_embedding': ";".join(self.bbox_embedding)}
+        # replace pid with index
+        self.replace_pid_with_index()
+        
+        prompt = {'img': self.path, 
+                  'annotation': ";".join(self.desc), 
+                  'context': ";".join(self.context),
+                  'bbox_embedding': ";".join(self.bbox_embedding),
+                  'pid_to_index': self.pid_to_index}
         for attr_name in self.dynamic_attribute_names:
             prompt[attr_name] = ";".join(getattr(self, attr_name))
         return prompt
-
+    
     @property
     def path(self):
         return self.__path
@@ -65,6 +71,38 @@ class ImageObject(object):
             self.dynamic_attribute_names.add(key)
             print(f"Register Success! New attributes list: {self.dynamic_attribute_names}")
         print(f"{key} already exists in {self.__name__}")
+
+    def replace_pid_with_index(self, ):
+        """ Replace pid with index in description
+        """
+        desc_list = list(self.desc)
+        for i, desc in enumerate(desc_list):
+            for pid, index in self.pid_to_index.items():
+                if pid not in desc:
+                    continue
+
+                desc_list[i] = desc_list[i].replace(f"<{pid}>", "Person{}".format(index))
+        self.desc = set(desc_list)
+
+        # replace pid with index in context
+        cont_list = list(self.context)
+        for i, cont in enumerate(cont_list):
+            for pid, index in self.pid_to_index.items():
+                if pid not in cont:
+                    continue
+
+                cont_list[i] = cont_list[i].replace(f"<{pid}>", "{}".format(index))
+        self.context = set(cont_list)
+
+        # replace pid with index in bbox_embedding
+        emb_list = list(self.bbox_embedding)
+        for i, emb in enumerate(emb_list):
+            for pid, index in self.pid_to_index.items():
+                if pid not in emb:
+                    continue
+
+                emb_list[i] = emb_list[i].replace(f"<{pid}>", "{}".format(index))
+        self.bbox_embedding = set(emb_list)
 
 
 class MyDict(dict):
@@ -503,15 +541,23 @@ class PromptDescriptorV2(PromptDescriptor):
                 bbox_norm = self._normalize_pid_bboxes(w, h, pid, ts, channel)
 
                 if len(bbox_norm) == 0:
+                    event.setdefault("pid_bboxes", {})[pid] = bbox_norm
                     continue
 
                 bbox_norm = "[%.2f, %.2f, %.2f, %.2f]" % tuple(bbox_norm)
                 event.setdefault("pid_bboxes", {})[pid] = bbox_norm
-
+        elif event["event_type"] == "INDIVIDUAL_RECEPTION":
+            pid = event["pid"]
+            staff = event["staff_id"]
+            bbox_norm_c = self._normalize_pid_bboxes(w, h, pid, ts, channel)
+            bbox_norm_s = self._normalize_pid_bboxes(w, h, staff, ts, channel)
+            event.setdefault("pid_bboxes", {})[pid] = bbox_norm_c
+            event.setdefault("pid_bboxes", {})[staff] = bbox_norm_s
         else:
             bbox_norm = self._normalize_pid_bboxes(w, h, event["pid"], ts, channel)
             
             if len(bbox_norm) == 0:
+                event.setdefault("pid_bboxes", {})[event["pid"]] = bbox_norm
                 return ""
             
             bbox_norm = "[%.2f, %.2f, %.2f, %.2f]" % tuple(bbox_norm)

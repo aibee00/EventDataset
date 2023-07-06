@@ -686,8 +686,8 @@ class EventDatasetV2(EventDatasetV0):
 
             # 迭代地获取每个events_in_time_clip的信息
             for event in tqdm(events_in_time_clip, desc=f"[{len(covered_time_clips)}clips]Processing events in each clip"):
-                if event['event_type'] != 'STORE_INOUT':
-                    continue
+                # if event['event_type'] != 'COMPANION':
+                #     continue
                 # 将事件转化为描述添加到各个channels的图片中去
                 self._process_per_event(event)
 

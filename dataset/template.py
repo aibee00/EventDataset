@@ -132,7 +132,8 @@ class CompanionTemplate(Template):
         with open(self.template_file, 'r') as f:
             template = f.read()
         
-        template = template.format(str(self.event['pids']))
+        pids = [f"<{pid}>" for pid in self.event['pids']]
+        template = template.format(str(pids))
         
         return template
     
@@ -174,7 +175,15 @@ class ContextTemplate(Template):
                     bbox = pid_bboxes.get(pid, None)
                     template_merge.append(template.format(object_name, pid, bbox))
             template = ";".join(template_merge)
-
+        elif self.event['event_type'] == "INDIVIDUAL_RECEPTION":
+            template_merge = []
+            pids = [self.event['pid'], self.event['staff_id']]
+            for pid in pids:
+                pid_bboxes = self.event.get('pid_bboxes', None)
+                if pid_bboxes:
+                    bbox = pid_bboxes.get(pid, None)
+                    template_merge.append(template.format(object_name, pid, bbox))
+            template = ";".join(template_merge)
         else:
             pid_bboxes = self.event.get('pid_bboxes', None)
             if pid_bboxes:
