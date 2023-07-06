@@ -15,7 +15,7 @@ CITY=guangzhou
 BRANCH=xhthwk
 DATE=20210717
 TAG=v744.eventgpt
-VER=v3
+VER=v2
 
 ##### 版本说明 #####
 # - v0: 把Prompt描述更新到label
