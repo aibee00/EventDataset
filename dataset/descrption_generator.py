@@ -3,12 +3,15 @@ import os.path as osp
 import shutil
 import cv2
 import numpy as np
-from abc import ABCMeta, abstractmethod
-from common import STORE_INOUT_NEAR_TIME, cv2AddChineseText, merge_bboxes_at_one_channel, logger
+from common import cv2AddChineseText, merge_bboxes_at_one_channel, logger
 from dataset.prompt_encoder import PromptEncoder
 from get_tracks import TrackLoader
 from copy import deepcopy
 import yaml
+
+from template import StoreInoutTemplate, RegionVisitTemplate, \
+    RegionInoutTemplate, CarInoutTemplate, CompanionTemplate, \
+    IndividualReceptionTemplate, ContextTemplate, BboxEmbeddingTemplate
 
 
 class ImageObject(object):
@@ -25,6 +28,9 @@ class ImageObject(object):
         self.index = 0
 
         self.dynamic_attribute_names = set()  # record new added attrbutes
+
+        # pid to pid_index
+        self.pid_to_index = dict()
 
     def __str__(self) -> str:
         """ 生成label prompt的格式
@@ -122,6 +128,18 @@ class ImageDescriptor(object):
     def add_description(self, img_path, description, other_attributes={}):
         """ 向图片index添加描述
         """
+        def get_pid_from_description(desc):
+            """ desc格式: <pid_name>:[x1,y1,x2,y2]
+            """
+            pid = ""
+            for part in desc.split("<"):
+                if '>' in part:
+                    pid = part.split(">")[0]
+                    break
+            return pid
+
+        SEP = ";"
+
         if not os.path.exists(img_path):
             raise ValueError(f"Image {img_path} not exists")
         
@@ -133,6 +151,7 @@ class ImageDescriptor(object):
         # Update self.img_table中的img_object的描述属性
         img_object = self.img_table.get(img_name)
         img_object.desc.add(description)
+        pid_to_index = img_object.pid_to_index
 
         # Add context to img_object
         if other_attributes:
@@ -140,27 +159,25 @@ class ImageDescriptor(object):
                 if not hasattr(img_object, name):
                     img_object.register(name, set())
 
-                getattr(img_object, name).add(attribute)
+                # 检查attribute对应的pid是否已经存在
+                # Note: 一般情况下desc是一个描述，
+                # 但group事件中有多个pid所以会有多个描述的情况，以分号(;)分隔
 
-                # 如果属性是context或bbox_embedding, 则需要确认img_object.context或者img_object.bbox_embedding中pid是否有重复
-                if name in ["context", "bbox_embedding"]:
-                    attribute = getattr(img_object, name)
-
-                    pid_desc_map = {}
-
-                    for info in attribute:
-                        # 这个info有可能包含多个描述，主要来自批次的pids
-                        SEP = ";"
-
-                        # 找出字符串info中所有在字符'<'和字符'>'中间的部分保存到pids中
-                        for description in info.split(SEP):
-                            for part in description.split("<"):
-                                if '>' in part:
-                                    pid = part.split(">")[0]
-                                    pid_desc_map[pid] = description
-
-                    # Update attribute
-                    setattr(img_object, name, set(pid_desc_map.values()))
+                if SEP in attribute:
+                    for desc in attribute.split(SEP):
+                        pid = get_pid_from_description(desc)
+                        if pid and pid not in pid_to_index:
+                            # update new pid and its desc
+                            pid_to_index[pid] = len(pid_to_index)
+                            # 更新描述到属性中
+                            getattr(img_object, name).add(desc)
+                else:
+                    pid = get_pid_from_description(attribute)
+                    if pid and pid not in pid_to_index:
+                        # update new pid and its desc
+                        pid_to_index[pid] = len(pid_to_index)
+                        # 更新描述到属性中
+                        getattr(img_object, name).add(attribute)
 
 
     def update_dataset_path(self, new_dataset_path):
@@ -168,218 +185,6 @@ class ImageDescriptor(object):
         """
         for img_name, img_object in self.img_table.items():
             img_object.path = osp.join(new_dataset_path, "imgs", img_name)
-
-
-########################################## Begin Template Class Define ####################################
-# 带参数的装饰器
-def wrapper_str(func):
-    def wrapper(self, *args, **kwargs):
-        assert osp.exists(self.template_file), f"Template file not found in: {self.template_file}"
-        result = func(self, *args, **kwargs)
-        return result
-    return wrapper
-
-
-class Template(metaclass=ABCMeta):
-    template_file = None
-
-    def __init__(self, template_file, event, area_descriptor=None, ts=None):
-        self.template_file = template_file
-        self.event = event
-        self.area_descriptor = area_descriptor
-        self.ts = ts
-    
-    @abstractmethod
-    def __str__(self):
-        pass
-
-
-class StoreInoutTemplate(Template):
-
-    def __init__(self, template_file, event, area_descriptor=None, ts=None):
-        super().__init__(template_file, event, area_descriptor, ts)
-
-    # 添加装饰器
-    @wrapper_str
-    def __str__(self):
-        with open(self.template_file, 'r') as f:
-            template = f.read()
-
-        # 如果self.ts不为None, 则根据ts来判断是进店还是出店
-        inout = "经过"
-        if self.ts:
-            # ts 在开始时间附近(前后10s)则标记inout为'进入'，结束时间附近标记为'走出'
-            if abs(self.ts - self.event['start_time']) < STORE_INOUT_NEAR_TIME * 2:
-                inout = "进入"
-            elif abs(self.ts - self.event['end_time']) < STORE_INOUT_NEAR_TIME * 2:
-                inout = "走出"
-        
-        template = template.format(self.event['pid'], inout)
-        
-        return template
-    
-
-class RegionVisitTemplate(Template):
-
-    def __init__(self, template_file, event, area_descriptor=None):
-        super().__init__(template_file, event, area_descriptor)
-
-    @wrapper_str
-    def __str__(self):
-        with open(self.template_file, 'r') as f:
-            template = f.read()
-        
-        region = self.area_descriptor.car_region[self.event['region_id']]
-        reg_name = region.name if region.name else region.type
-        template = template.format(self.event['pid'], reg_name)
-        
-        return template
-    
-
-class RegionInoutTemplate(Template):
-
-    def __init__(self, template_file, event, area_descriptor=None, ts=None):
-        super().__init__(template_file, event, area_descriptor, ts)
-
-    @wrapper_str
-    def __str__(self):
-        with open(self.template_file, 'r') as f:
-            template = f.read()
-        
-        # 如果self.ts不为None, 则根据ts来判断是进店还是出店
-        inout = "内部访问"
-        if self.ts:
-            # ts 在开始时间附近(前后10s)则标记inout为'进入'，结束时间附近标记为'走出'
-            if abs(self.ts - self.event['start_time']) < STORE_INOUT_NEAR_TIME * 2:
-                inout = "进入"
-            elif abs(self.ts - self.event['end_time']) < STORE_INOUT_NEAR_TIME * 2:
-                inout = "走出"
-        
-        region = self.area_descriptor.internal_region[self.event['region_id']]
-        reg_name = region.name if region.name else region.type
-        template = template.format(self.event['pid'], inout, reg_name)
-        
-        return template
-    
-
-class CarInoutTemplate(Template):
-
-    def __init__(self, template_file, event, area_descriptor=None, ts=None):
-        super().__init__(template_file, event, area_descriptor, ts)
-
-    @wrapper_str
-    def __str__(self):
-        with open(self.template_file, 'r') as f:
-            template = f.read()
-        
-        # 如果self.ts不为None, 则根据ts来判断是进店还是出店
-        inout = "内部访问"
-        if self.ts:
-            # ts 在开始时间附近(前后10s)则标记inout为'进入'，结束时间附近标记为'走出'
-            if abs(self.ts - self.event['start_time']) < STORE_INOUT_NEAR_TIME * 2:
-                inout = "进入"
-            elif abs(self.ts - self.event['end_time']) < STORE_INOUT_NEAR_TIME * 2:
-                inout = "走出"
-        
-        region = self.area_descriptor.car_region[self.event['region_id']]
-        reg_name = region.name if region.name else self.event['region_id']
-        template = template.format(self.event['pid'], inout, reg_name)
-        
-        return template
-    
-
-class CompanionTemplate(Template):
-
-    def __init__(self, template_file, event, area_descriptor=None):
-        super().__init__(template_file, event, area_descriptor)
-
-    @wrapper_str
-    def __str__(self):
-        with open(self.template_file, 'r') as f:
-            template = f.read()
-        
-        template = template.format(self.event['pids'])
-        
-        return template
-    
-
-class IndividualReceptionTemplate(Template):
-
-    def __init__(self, template_file, event, area_descriptor=None):
-        super().__init__(template_file, event, area_descriptor)
-
-    @wrapper_str
-    def __str__(self):
-        with open(self.template_file, 'r') as f:
-            template = f.read()
-        
-        template = template.format(self.event['staff_id'], self.event['pid'])
-        
-        return template   
-    
-
-class ContextTemplate(Template):
-
-    def __init__(self, template_file, event, area_descriptor=None):
-        super().__init__(template_file, event, area_descriptor)
-
-    @wrapper_str
-    def __str__(self):
-        with open(self.template_file, 'r') as f:
-            template = f.read()
-        
-        bbox = None
-        object_name = "Person"
-
-        if self.event['event_type'] == "COMPANION":
-            template_merge = []
-            pids = self.event['pids']
-            for pid in pids:
-                pid_bboxes = self.event.get('pid_bboxes', None)
-                if pid_bboxes:
-                    bbox = pid_bboxes.get(pid, None)
-                    template_merge.append(template.format(object_name, pid, bbox))
-            template = ";".join(template_merge)
-
-        else:
-            pid_bboxes = self.event.get('pid_bboxes', None)
-            if pid_bboxes:
-                bbox = pid_bboxes.get(self.event['pid'], None)
-            template = template.format(object_name, self.event['pid'], bbox)
-        
-        return template
-    
-
-class BboxEmbeddingTemplate(Template):
-
-    def __init__(self, template_file, event, area_descriptor=None):
-        super().__init__(template_file, event, area_descriptor)
-
-    @wrapper_str
-    def __str__(self):
-        with open(self.template_file, 'r') as f:
-            template = f.read()
-        
-        bbox = None
-        object_name = "Person"
-
-        if self.event['event_type'] == "COMPANION":
-            template_merge = []
-            pids = self.event['pids']
-            for pid in pids:
-                pid_bbox_embeddings = self.event.get('pid_bbox_embeddings', None)
-                if pid_bbox_embeddings:
-                    bbox = pid_bbox_embeddings.get(pid, None)
-                    template_merge.append(template.format(object_name, pid, bbox))
-            template = ",".join(template_merge)
-
-        else:
-            pid_bbox_embeddings = self.event.get('pid_bbox_embeddings', None)
-            if pid_bbox_embeddings:
-                bbox = pid_bbox_embeddings.get(self.event['pid'], None)
-            template = template.format(object_name, self.event['pid'], bbox)
-        
-        return template
 
 
 class PromptDescriptor(object):
