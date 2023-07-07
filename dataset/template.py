@@ -39,16 +39,25 @@ class StoreInoutTemplate(Template):
         with open(self.template_file, 'r') as f:
             template = f.read()
 
+        # Door caption
+        door_in = self.area_descriptor.door_region[str(self.event['in_door_id'])]
+        door_out = self.area_descriptor.door_region[str(self.event['out_door_id'])]
+        in_door_name = "Door" + door_in.id
+        out_door_name = "Door" + door_out.id
+
         # 如果self.ts不为None, 则根据ts来判断是进店还是出店
         inout = "经过"
+        door = in_door_name
         if self.ts:
             # ts 在开始时间附近(前后10s)则标记inout为'进入'，结束时间附近标记为'走出'
             if abs(self.ts - self.event['start_time']) < STORE_INOUT_NEAR_TIME * 2:
                 inout = "进入"
+                door = in_door_name
             elif abs(self.ts - self.event['end_time']) < STORE_INOUT_NEAR_TIME * 2:
                 inout = "走出"
+                door = out_door_name
         
-        template = template.format(self.event['pid'], inout)
+        template = template.format(self.event['pid'], inout, door)
         
         return template
     
@@ -65,6 +74,8 @@ class RegionVisitTemplate(Template):
         
         region = self.area_descriptor.car_region[self.event['region_id']]
         reg_name = region.name if region.name else region.type
+
+        reg_name = "Car" + str(region.id)
         template = template.format(self.event['pid'], reg_name)
         
         return template
@@ -91,6 +102,8 @@ class RegionInoutTemplate(Template):
         
         region = self.area_descriptor.internal_region[self.event['region_id']]
         reg_name = region.name if region.name else region.type
+
+        reg_name = "InternalRegion" + str(region.id)
         template = template.format(self.event['pid'], inout, reg_name)
         
         return template
@@ -117,6 +130,8 @@ class CarInoutTemplate(Template):
         
         region = self.area_descriptor.car_region[self.event['region_id']]
         reg_name = region.name if region.name else self.event['region_id']
+
+        reg_name = "Car" + str(region.id)
         template = template.format(self.event['pid'], inout, reg_name)
         
         return template

@@ -566,6 +566,26 @@ class PromptDescriptorV2(PromptDescriptor):
         txt_file = f"{self.description_file_path}/context.txt"
         return str(ContextTemplate(txt_file, event, self.area_descriptor))
     
+    def generate_region_context(self, event, ts, channel):
+        """ 生戯各业务包域的描述
+
+        Args:
+            event: Dict
+            ts: int
+            channel: str
+        
+        Returns:
+            context: str
+        """
+        # 从event中获取region id
+        region = self.area_descriptor.get_region_by_type_and_id(event["region_type"], event["region_id"])
+
+        # 将region的坐标从floor映射到 camera 的坐标系
+
+
+        txt_file = f"{self.description_file_path}/context.txt"
+        return str(ContextTemplate(txt_file, event, self.area_descriptor))
+    
 
 class PromptDescriptorV3(PromptDescriptorV2):
 
