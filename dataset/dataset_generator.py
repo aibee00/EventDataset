@@ -87,7 +87,8 @@ def get_overlap_time_range(time_range1, time_range2):
 
 class EventDataset(Dataset, metaclass=ABCMeta):
 
-    def __init__(self, store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path):
+    def __init__(self, camera_info_path, store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path):
+        self.camera_info_path = camera_info_path
         self.store_info_path = store_info_path
         self.car_pose = car_pose
         self.xy = new_xy_path
@@ -111,7 +112,7 @@ class EventDataset(Dataset, metaclass=ABCMeta):
         self.img_descriptor = ImageDescriptor(self.dataset_path)
 
         # Get instacne of area descriptor
-        self.area_descriptor = AreaDescriptor(area_anno_path, car_pose)
+        self.area_descriptor = AreaDescriptor(area_anno_path, car_pose, camera_info_path)
 
     @abstractclassmethod
     def __getitem__(self, index):
@@ -128,8 +129,8 @@ class EventDataset(Dataset, metaclass=ABCMeta):
 
 class EventDatasetV0(EventDataset):
 
-    def __init__(self, store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path):
-        super().__init__(store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path)
+    def __init__(self, camera_info_path, store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path):
+        super().__init__(camera_info_path, store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path)
 
         # Get instance of prompt descriptor
         self.prompt_descriptor = PromptDescriptor(osp.join(osp.dirname(__file__), "../prompt_templates"), self.area_descriptor)
@@ -432,8 +433,8 @@ class EventDatasetV1(EventDatasetV0):
         - 加入一些中间信息，例如，加入朝向信息
     """
 
-    def __init__(self, store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path, grid_cameras_map_path):
-        super().__init__(store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path)
+    def __init__(self, camera_info_path, store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path, grid_cameras_map_path):
+        super().__init__(camera_info_path, store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path)
 
         # Get instance of prompt descriptor
         self.prompt_descriptor = PromptDescriptorV1(osp.join(osp.dirname(__file__), "../prompt_templates"), self.area_descriptor, pid_output_path)
@@ -578,8 +579,8 @@ class EventDatasetV2(EventDatasetV0):
         - box归一化是指坐标占比(based on img.shape)
     """
 
-    def __init__(self, store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path, grid_cameras_map_path):
-        super().__init__(store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path)
+    def __init__(self, camera_info_path, store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path, grid_cameras_map_path):
+        super().__init__(camera_info_path, store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path)
 
         # Get instance of prompt descriptor
         self.prompt_descriptor = PromptDescriptorV2(osp.join(osp.dirname(__file__), "../prompt_templates"), self.area_descriptor, pid_output_path)
@@ -658,7 +659,15 @@ class EventDatasetV2(EventDatasetV0):
                     if description:
                         other_attributes = {}
                         context = self.prompt_descriptor.generate_context(event, ts, channel, self.img_shape)
-                        other_attributes.update({'context': context})
+                        if context:
+                            other_attributes.update({'context': context})
+
+                        region_context = self.prompt_descriptor.generate_region_context(event, ts, channel, self.img_shape)
+                        if region_context:
+                            region_type = region_context.split('<')[-1].split('>')[0]
+                            while region_type[-1].isdigit():
+                                region_type = region_type[:-1]
+                            other_attributes.update({f'{region_type}_context': region_context})
                         
                         self.img_descriptor.add_description(img_file, description, other_attributes)
 
@@ -686,8 +695,8 @@ class EventDatasetV2(EventDatasetV0):
 
             # 迭代地获取每个events_in_time_clip的信息
             for event in tqdm(events_in_time_clip, desc=f"[{len(covered_time_clips)}clips]Processing events in each clip"):
-                # if event['event_type'] != 'COMPANION':
-                #     continue
+                #if event['event_type'] != 'INDIVIDUAL_RECEPTION':
+                #    continue
                 # 将事件转化为描述添加到各个channels的图片中去
                 self._process_per_event(event)
 
@@ -704,8 +713,8 @@ class EventDatasetV3(EventDatasetV0):
         - v2: 加入bbox的归一化(参考LLaVA)
     """
 
-    def __init__(self, store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path, grid_cameras_map_path):
-        super().__init__(store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path)
+    def __init__(self, camera_info_path, store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path, grid_cameras_map_path):
+        super().__init__(camera_info_path, store_info_path, car_pose, new_xy_path, pid_output_path, events_file, video_path, dataset_path)
 
         # Get instance of prompt descriptor
         self.prompt_descriptor = PromptDescriptorV3(osp.join(osp.dirname(__file__), "../prompt_templates"), self.area_descriptor, pid_output_path)
@@ -877,8 +886,8 @@ class EventDatasetV3(EventDatasetV0):
 
             # 迭代地获取每个events_in_time_clip的信息
             for event in tqdm(events_in_time_clip, desc=f"[{len(covered_time_clips)}clips]Processing events in each clip"):
-                # if event['event_type'] != 'STORE_INOUT':
-                #     continue
+                #if event['event_type'] != 'INDIVIDUAL_RECEPTION':
+                #    continue
                 # 将事件转化为描述添加到各个channels的图片中去
                 self._process_per_event(event)
 
@@ -928,6 +937,7 @@ if __name__ == "__main__":
         raise e 
 
     dataset_creater = Handler(
+        args.camera_info_path,
         args.store_infos_path,
         args.car_pose,
         args.new_xy_path, 
