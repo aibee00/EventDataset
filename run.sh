@@ -2,19 +2,19 @@
 set -eo pipefail
 set -x
 
-# USER=${1}
-# BRAND=${2}
-# CITY=${3}
-# BRANCH=${4}
-# DATE=${5}
-# TAG=${6}
+USER=${1}
+BRAND=${2}
+CITY=${3}
+BRANCH=${4}
+DATE=${5}
+TAG=${6}
 
-USER=wphu
-BRAND=GACNE
-CITY=guangzhou
-BRANCH=xhthwk
-DATE=20210717
-TAG=v744.eventgpt
+#USER=wphu
+#BRAND=GACNE
+#CITY=guangzhou
+#BRANCH=xhthwk
+#DATE=20210717
+#TAG=v744.eventgpt
 VER=v2
 
 ##### 版本说明 #####
