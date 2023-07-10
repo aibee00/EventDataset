@@ -148,12 +148,13 @@ class MyDict(UserDict):
         return string
 
     def value2str(self,) -> dict:
+        ret = {}
         for k, v in self.items():
             if isinstance(v, ImageObject):
-                self[k] = v.prompt
+                ret[k] = v.prompt
             else:
-                self[k] = str(v)
-        return self
+                ret[k] = str(v)
+        return ret
         
 
 class ImageDescriptor(object):
