@@ -405,6 +405,19 @@ class Project3DTo2D():
             ref_img = cv2.imread(ref_img_file)
             self.ref_imgs[channel] = ref_img
 
+    def project_floor_to_3d(self, pt2d):
+        """ Project floor coordinates to 3d coordinates
+        :param pt2d: shape(n, 2)
+        :return: shape(n, 3)
+        """
+        if isinstance(pt2d, list):
+            pt2d = np.array(pt2d)
+        
+        pt2d_hom = np.append(pt2d, np.ones((pt2d.shape[0], 1)), axis=1)
+        # H_3to2map.shape(3, 3), pt2d_hom.shape(n, 3) -> pt3d.shape(n, 3)
+        pt3d = np.array([np.dot(self.H_2mapto3, point_cam) for point_cam in pt2d_hom])
+        return pt3d
+
     def project_3d_to_2d(self, pts3d, channel):
         """ project 3d point to 2d camera
 
@@ -461,8 +474,8 @@ def get_points(area_annotation):
     car_coords = get_car_pose(car_pose)
 
 
-    kpts3d = convert_2d_to_3d_v1(np.concatenate((front_door, internal_door, car_coords), axis=0))
-    # kpts3d = np.array(internal_door)
+    # kpts3d = convert_2d_to_3d_v1(np.concatenate((front_door, internal_door, car_coords), axis=0))
+    kpts3d = np.concatenate((front_door, internal_door, car_coords), axis=0)
     print(f"\t kpts3d: {kpts3d.tolist()},\n\t shape: {kpts3d.shape} \n")
 
     return kpts3d
@@ -490,7 +503,8 @@ if __name__ == "__main__":
         # kpts3d = np.array([[256, 788, 0], [34, 998, 0], [786, 998, 0]])
         kpts3d = get_points(area_annotation_path)
 
-        kpts3d = np.array([np.dot(project.H_2mapto3, point_cam) for point_cam in kpts3d])
+        kpts3d = project.project_floor_to_3d(kpts3d)
+
         kpts3d[:, 2] = 0
         print(f"point_3d_homogeneous: {kpts3d.tolist()}")
 
