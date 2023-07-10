@@ -1,6 +1,9 @@
 import os
 import json
+import numpy as np
+from pathlib import Path
 from shapely.geometry import Polygon
+from triangulation import Project3DTo2D
 
 # area_annotation示例
 """
@@ -261,13 +264,19 @@ class CarArea(Area):
 # 定义区域类型
 class AreaDescriptor:
 
-    def __init__(self, area_anno_path, car_pose):
+    def __init__(self, area_anno_path, car_pose, camera_info_path):
         self.area_anno_path = area_anno_path
         self.car_pose = car_pose
+        self.camera_info_path = camera_info_path
 
         self.car_infos = self._load_car_region()
 
         self.area_annos = self._load_area_info()
+
+        # Create Instance of Project3DTo2D
+        store_tag = "/".join(Path(self.area_anno_path).parent.as_posix().split('/')[-3:])
+        camera_info_path = Path(self.camera_info_path).parents[2]
+        self.project = Project3DTo2D(camera_info_path, store_tag)
 
     # 加载车区域信息
     def _load_car_region(self):
@@ -369,3 +378,35 @@ class AreaDescriptor:
             cars[str(car['cid'])] = car_area
 
         return cars
+    
+    def get_region_by_type_and_id(self, region_type, region_id):
+        """ 标准化获取匿名对象
+        """
+        region_id = str(region_id)
+        if 'DOOR' in region_type or 'STORE' in region_type:  # 注意这里Storeinout区域是door
+            if region_id in self.door_region:
+                return self.door_region[region_id]
+            else:
+                return None
+        elif 'CAR' in region_type:
+            return self.car_region[region_id]
+        elif 'INTERNAL_REGION' in region_type:
+            return self.internal_region[region_id]
+        else:
+            return None
+        
+    def map_floor_to_camera(self, points, channel):
+        """ 将floor map上的点坐标映射到各个channel的camera坐标系
+
+        :points: np.array, shape(n, 2)
+        :return: np.array, shape(n, 2)
+        """
+        if isinstance(points, list):
+            points = np.array(points)
+        
+        # Project floor coordinates to 3D
+        points_3d = self.project.project_floor_to_3d(points)
+
+        # Project 3D coordinates to Camera coordinates of channel
+        points_cam = self.project.project_3d_to_2d(points_3d, channel)[:, 0, :]
+        return points_cam.tolist()
