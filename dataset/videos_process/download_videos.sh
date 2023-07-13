@@ -9,7 +9,7 @@ BRANCH=${4}
 DATE=${5}
 work_path=${6}
 
-source ./config
+# source ./config
 
 hdfscli initkrb5 -k /home/${USER}/keytab/${USER}.keytab ${USER} ||
 hdfscli initkrb5 -k /home/${USER}/${USER}.keytab ${USER} 
