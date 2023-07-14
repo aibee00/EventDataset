@@ -2,6 +2,7 @@ import os
 import os.path as osp
 import json
 import sys
+from tqdm import tqdm
 
 
 input_file = sys.argv[1]
@@ -18,9 +19,11 @@ with open(input_file, 'r') as f:
 
 # convert
 new_labels = []
-for fname in labels:
+for i, fname in enumerate(tqdm(labels)):
     label = labels[fname]
-    print(label.keys())
+
+    if i == 0:
+        print(label.keys())
 
     abs_path = label["img"]
 
