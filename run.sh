@@ -9,13 +9,15 @@ BRANCH=${4}
 DATE=${5}
 TAG=${6}
 
-#USER=wphu
-#BRAND=GACNE
-#CITY=guangzhou
-#BRANCH=xhthwk
-#DATE=20210717
-#TAG=v744.eventgpt
+[[ -z $USER ]] && USER=wphu
+[[ -z $BRAND ]] && BRAND=GACNE
+[[ -z $CITY ]] && CITY=guangzhou
+[[ -z $BRANCH ]] && BRANCH=xhthwk
+[[ -z $DATE ]] && DATE=20210717
+[[ -z $TAG ]] && TAG=v744.eventgpt
+
 VER=v2
+OUTPUT_PATH=/ssd/${USER}/Dataset/lavis/eventgpt/  # dataset save path for eventgpt
 
 ##### 版本说明 #####
 # - v0: 把Prompt描述更新到label
@@ -66,5 +68,22 @@ python dataset/dataset_generator.py \
     --version $VER
 
 
+IS_TRAIN=True
+
+if [ "$BRAND" = GACNE ]; then
+    IS_TRAIN=False
+fi
+
+if [ "$IS_TRAIN" = True ]; then
+    python dataset/convert_to_coco_format.py \
+        $dataset_path/label.json \
+        ${OUTPUT_PATH}/annotations/label_train.json \
+        1
+else
+    python dataset/convert_to_coco_format.py \
+        $dataset_path/label.json \
+        ${OUTPUT_PATH}/annotations/label_train.json \
+        0
+fi
 
 
