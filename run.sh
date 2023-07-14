@@ -79,11 +79,13 @@ if [ "$IS_TRAIN" = True ]; then
         $dataset_path/label.json \
         ${OUTPUT_PATH}/annotations/label_train.json \
         1
+    echo "Convert to coco format for train of ${BRAND} Done!"
 else
     python dataset/convert_to_coco_format.py \
         $dataset_path/label.json \
-        ${OUTPUT_PATH}/annotations/label_train.json \
+        ${OUTPUT_PATH}/annotations/label_test.json \
         0
+    echo "Convert to coco format for test of ${BRAND} Done!"
 fi
 
 
