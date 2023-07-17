@@ -73,8 +73,11 @@ class RegionVisitTemplate(Template):
     def __str__(self):
         with open(self.template_file, 'r') as f:
             template = f.read()
-        
-        region = self.area_descriptor.car_region[self.event['region_id']]
+        try:
+            region = self.area_descriptor.car_region[self.event['region_id']]
+        except:
+            print(f"Error region id: {self.event['region_id']} not found!")
+            return ""
         reg_name = region.name if region.name else region.type
 
         reg_name = "Car" + str(region.id)
