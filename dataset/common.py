@@ -114,6 +114,8 @@ def get_pid_loc_time_range(pid_locs, pid):
     
     pid_xy = pid_locs[pid]
     ts_vec = sorted(pid_xy['loc'].keys())
+    if len(ts_vec) == 0:
+        return 0, 0
     start_time = ts_vec[0]
     end_time = ts_vec[-1]
 
