@@ -27,12 +27,13 @@ KEYTAB=/home/${USER}/${USER}.keytab
 hdfscli initkrb5 -k ${KEYTAB} ${USER};
 
 # 1. GT的new_xy.tar.gz
-NEW_XY_HDFS_PATH=/bj_dev/user/wphu/gt_new_xy.tar
+NEW_XY_HDFS_PATH=/bj_dev/user/wphu/gt_new_xy.final.tar
 hdfscli download ${NEW_XY_HDFS_PATH} ${LOCAL_BASE}/gt_new_xy.tar
 tar xvf ${LOCAL_BASE}/gt_new_xy.tar -C ${LOCAL_BASE}
 
 # 2. GT的pid_output.tar
 DATA_PATH=/bj_dev/user/store_solutions/store_benchmarks/${BRAND}/${CITY}/${STORE}v7/${DATE}/pid_output.tar
+DATA_PATH=/bj_dev/user/store_solutions/store_benchmarks/${BRAND}/${CITY}/${STORE}v7/${DATE}/gtevents/pid_output.tar
 hdfscli download ${DATA_PATH} ${LOCAL_BASE}/pid_output.tar
 tar -xvf ${LOCAL_BASE}/pid_output.tar -C ${LOCAL_BASE}
 
