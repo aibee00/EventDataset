@@ -5,17 +5,24 @@ import sys
 from tqdm import tqdm
 
 
-input_file = sys.argv[1]
-output_file = sys.argv[2]
-is_val=sys.argv[3]
+input_file = sys.argv[1]  # e.g. label_vw.json or multi-json sep with ',', like label_vw.json,label_hongqi.json
+output_file = sys.argv[2]  # e.g. label_train.json
+is_val=sys.argv[3]  # is_val=1 or is_val=0
 
 if is_val == 1:
     is_val = True
 else:
     is_val = False
 
-with open(input_file, 'r') as f:
-    labels = json.load(f)
+if ',' not in input_file:
+    with open(input_file, 'r') as f:
+        labels = json.load(f)
+else:
+    input_files = input_file.split(',')
+    labels = {}
+    for input_file in input_files:
+        with open(input_file, 'r') as f:
+            labels.update(json.load(f))
 
 # convert
 new_labels = []
