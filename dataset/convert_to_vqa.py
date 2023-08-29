@@ -309,11 +309,49 @@ def bbox_filter(bbox, max_capacity = 10):
     return groups
 
 
+def convert_to_vqa6_onlycar(data):
+    """ Filter caption about car only in the dense_captions of the data
+    """
+    vqa = []
+    for item in tqdm(data):
+        dense_caption = item['dense_caption']
+        captions = dense_caption.split(';')
+        captions = [caption for caption in captions \
+                    if ' car ' in caption and 'tire' not in caption and 'people' not in caption and \
+                        'woman' not in caption and 'man' not in caption and 'windshield' not in caption]
+        
+        if not captions:
+            continue
+
+        # dense_caption = ";".join(captions)
+        # item['dense_caption'] = dense_caption
+        # vqa.append(item)
+
+        # 这里我们将多个描述split为多个样本用来增加训练样本数
+        for caption in captions:
+            new_item = item.copy()
+
+            # 我们把caption中car的bbox坐标归一化一下
+            desc, bbox = caption.split(':')
+            bbox = eval(bbox)
+            bbox = [0 if c < 0 else c for c in bbox]
+            bbox = norm_coords(bbox, IMG_SIZE)
+            caption = f"{desc}:{bbox}"
+
+            new_item['dense_caption'] = caption.strip()
+            vqa.append(new_item)
+
+    print(f"Total original samples: {len(data)}")
+    print(f"Total samples after filter out sample with car bbox: {len(vqa)}")
+    return vqa
+
+
 with open(input_file) as f:
     data = json.load(f)
 
 with open(output_file, 'w') as f:
     # json.dump(convert_to_vqa2(data), f, indent=2)
     # json.dump(convert_to_vqa3(data), f, indent=2)
-    json.dump(convert_to_vqa4(data), f, indent=2)
+    # json.dump(convert_to_vqa4(data), f, indent=2)
     # json.dump(convert_to_vqa5_llava(data), f, indent=2)
+    json.dump(convert_to_vqa6_onlycar(data), f, indent=2)
