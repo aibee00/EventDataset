@@ -166,7 +166,8 @@ def collect_and_combine_labels(root_dir, label_path_name="labels"):
     print("Processing and combining labels completed.")
 
 
-def process_video_with_progress(video_path):
+def process_video_with_progress(parameters):
+    video_path, overall_progress = parameters
     process_video(video_path)
     overall_progress.update()  # Update overall progress bar
 
@@ -199,8 +200,9 @@ if __name__ == "__main__":
             # Create a tqdm instance to track overall progress
             overall_progress = tqdm(total=len(video_paths), desc="Videos processed", position=0, leave=True)
             
+            parameters = [(path, overall_progress) for path in video_paths]
             # Start the processing using the pool of processes
-            pool.map(process_video_with_progress, video_paths)
+            pool.map(process_video_with_progress, parameters)
             
             overall_progress.close()  # Close the overall progress bar
     
@@ -214,7 +216,7 @@ if __name__ == "__main__":
         executor = ThreadPoolExecutor(max_workers=max_threads)
 
         # Use ThreadPoolExecutor to submit tasks
-        future_to_path = {executor.submit(process_video_with_progress, video_path): video_path for video_path in video_paths}
+        future_to_path = {executor.submit(process_video_with_progress, (video_path, overall_progress)): video_path for video_path in video_paths}
 
         # Wait for all tasks to finish
         for future in tqdm(as_completed(future_to_path), total=len(future_to_path), desc="Threads completed", position=1, leave=True):
