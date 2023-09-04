@@ -420,7 +420,7 @@ class YolosObjectDetection():
         # convert to string format: "person: box, car: box, ..."
         context_str = ""
         for label, score, box in detections:
-            context_str += f"{label}: {box}, "
+            context_str += f"{label}: {box}; "
 
         # 去掉最后的两个字符: ", "
         context_str = context_str[:-2]
