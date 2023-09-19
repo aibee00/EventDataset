@@ -1,114 +1,89 @@
 import streamlit as st
 import json
-from copy import deepcopy
+import sys
 
-print("restart")
+# 设置页面配置为 "wide"，以占据整个屏幕宽度
+st.set_page_config(layout="wide")
 
-result = json.loads(open('data/dataset_img_list.json', 'r').read())
+# Load image paths from a JSON file
+label_path = "data/dataset_img_list.json"
+
+if len(sys.argv) > 1:
+    label_path = sys.argv[1]
+
+result = json.loads(open(label_path, 'r').read())
 result.sort()
 
-current_image_index = st.session_state.get("counter", 0)
+# Initialize global variables
+if "annotations" not in st.session_state:
+    st.session_state.annotations = {}
 
-# 初始化字典和图片路径列表
-annotations =  st.session_state.get("annotations", {})
+if "current_index" not in st.session_state:
+    st.session_state.current_index = 0
+
+current_index = st.session_state.current_index
+
+# Initialize data dictionary
 data_dict = {}
-image_paths = result #["image1.jpg", "image2.jpg", "image3.jpg"]  # 以列表形式提供图片路径
 
-
-def load_first_image():
-    global current_image_index
-    if int(current_image_index) < len(image_paths):
-        image_path = image_paths[current_image_index]
+# Function to load and display the current image and caption
+def load_current_image():
+    if 0 <= current_index < len(result):
+        image_path = result[current_index]
         data_dict["img"] = image_path
-        data_dict["label"] = ""  # 清空标注结果
-        st.write("第{}/{}张: {}".format(
-            current_image_index, 
-            len(result),
-            image_paths[current_image_index]))
-    else:
-        st.write("No more images.")
+        data_dict["label"] = st.session_state.annotations.get(str(current_index), "")  # Get existing caption
+        st.write(f"第{current_index}/{len(result)}张图片: {image_path}")
+        st.image(data_dict["img"])
+        label_key = f"label_input_{current_index}"  # Generate unique key
+        data_dict["label"] = st.text_area("标签", key=label_key, value=data_dict["label"])  # Display and edit caption
 
-# 点击"下一个"按钮加载下一张图片
-def load_next_image():
-    global current_image_index
-    if int(current_image_index) < len(image_paths):
-        image_path = image_paths[current_image_index]
-        data_dict["img"] = image_path
-        data_dict["label"] = ""  # 清空标注结果
-        current_image_index += 1
-    else:
-        st.write("No more images.")
+# Function to save the caption
+def save_caption():
+    caption_key = f"label_input_{current_index}"
+    data_dict["label"] = st.session_state.get(caption_key, "")  # Get caption from the input box
+    st.session_state.annotations[str(current_index)] = data_dict["label"]
+    with col2:
+        st.write(f"第{current_index}/{len(result)}张图片的标签已保存。")
 
-# 点击"上一个"按钮加载上一张图片
-def load_pre_image():
-    global current_image_index
-    if int(current_image_index) >= 0 and int(current_image_index) < len(image_paths):
-        image_path = image_paths[current_image_index]
-        data_dict["img"] = image_path
-        data_dict["label"] = ""  # 清空标注结果
-        current_image_index -= 1
-    else:
-        st.write("No more images.")
+# Streamlit app title
+st.title("图像标注")
 
-# 点击"下一个"或者"上一个"按钮保存标注结果
-def pre_next_save_label():
-    # global current_image_index
-    print(current_image_index)
-    if data_dict["img"] not in annotations:
-        data_dict["label"] = st.session_state.label_input
-        annotations[data_dict["img"]] = deepcopy(data_dict)  # 将当前标注结果添加到列表中
-    st.write("第{}/{}张: {}".format(
-            current_image_index, 
-            len(result),
-            image_paths[current_image_index]))
+# Create a column for image display and next/previous buttons
+col1, col2, col3 = st.columns([15, 1, 10])
 
-# 点击"Submit"按钮保存标注结果
-def save_label():
-    # global current_image_index
-    data_dict["label"] = st.session_state.label_input
-    print(current_image_index)
-    annotations[data_dict["img"]] = deepcopy(data_dict)  # 将当前标注结果添加到列表中
-    st.write("第{}/{}张: {}".format(
-            current_image_index, 
-            len(result),
-            image_paths[current_image_index]))
+# with col1:
+#     # Display the current image and caption
+#     load_current_image()
 
-st.title("Image Annotation")
+with col3:
+    if st.button("上一个") and current_index > 0:
+        save_caption()
+        current_index -= 1
+        st.session_state.current_index = current_index
+        with col1:
+            # Display the current image and caption
+            load_current_image()
 
-# 加载第一张图片
-load_first_image()
+with col3:
+    if st.button("下一个") and current_index < len(result) - 1:
+        save_caption()
+        current_index += 1
+        st.session_state.current_index = current_index
+        with col1:
+            # Display the current image and caption
+            load_current_image()
 
-# 显示当前图片和标注输入框
-st.image(data_dict["img"])
-label_input = st.text_area("Label", key="label_input")
+with col3:
+    # Create a save button to save the caption
+    if st.button("保存"):
+        save_caption()
+    # Display all saved captions
+    st.write("已保存的标签:")
+    st.write(st.session_state.annotations)
 
-col1, col2 = st.columns(2)
 
-with col1:
-    # 当点击"Next"按钮时，加载下一张图片并保存标注结果
-    if st.button("下一个"):
-        load_next_image()
-        pre_next_save_label()
-        st.session_state["counter"] = current_image_index
 
-with col2:
-    # 当点击"Next"按钮时，加载下一张图片并保存标注结果
-    if st.button("上一个"):
-        load_pre_image()
-        pre_next_save_label()
-        st.session_state["counter"] = current_image_index
 
-st.columns(1)
-
-# 当点击"Submit"按钮时，仅保存标注结果
-if st.button("Submit"):
-    save_label()
-
-# 显示所有标注结果
-st.session_state["annotations"] = annotations
-st.write("Annotations:")
-st.write(annotations)
-
-# 保存所有结果
+# Save all results to a JSON file
 with open("data/label_result.json", 'w', encoding="utf-8") as f:
-    json.dump(annotations, f, ensure_ascii=False, indent=2)
+    json.dump(st.session_state.annotations, f, ensure_ascii=False, indent=2)
