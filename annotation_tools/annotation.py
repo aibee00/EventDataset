@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 import sys
+from pathlib import Path
 
 # 设置页面配置为 "wide"，以占据整个屏幕宽度
 st.set_page_config(layout="wide")
@@ -76,5 +77,7 @@ with col3:
 
 
 # Save all results to a JSON file
-with open("data/label_result.json", 'w', encoding="utf-8") as f:
+root = Path(label_path).parent
+save_path = root / "label_result.json"
+with open(save_path, 'w', encoding="utf-8") as f:
     json.dump(st.session_state.annotations, f, ensure_ascii=False, indent=2)
