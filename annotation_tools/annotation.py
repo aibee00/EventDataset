@@ -51,27 +51,20 @@ st.title("图像标注")
 # Create a column for image display and next/previous buttons
 col1, col2, col3 = st.columns([15, 1, 10])
 
-# with col1:
-#     # Display the current image and caption
-#     load_current_image()
-
 with col3:
-    if st.button("上一个") and current_index > 0:
+    if st.button("⬆️上一个") and current_index > 0:
         save_caption()
         current_index -= 1
         st.session_state.current_index = current_index
-        with col1:
-            # Display the current image and caption
-            load_current_image()
 
 with col3:
-    if st.button("下一个") and current_index < len(result) - 1:
+    if st.button("⬇️下一个") and current_index < len(result) - 1:
         save_caption()
         current_index += 1
         st.session_state.current_index = current_index
-        with col1:
-            # Display the current image and caption
-            load_current_image()
+
+with col1:
+    load_current_image()
 
 with col3:
     # Create a save button to save the caption
@@ -80,8 +73,6 @@ with col3:
     # Display all saved captions
     st.write("已保存的标签:")
     st.write(st.session_state.annotations)
-
-
 
 
 # Save all results to a JSON file
