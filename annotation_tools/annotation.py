@@ -107,7 +107,7 @@ with col1:
     load_current_image()
 
 with col3:
-    sub_col1, sub_col2, _ = st.columns([1, 1, 3])
+    sub_col1, sub_col2, sub_col3, sub_col4 = st.columns([1, 1, 1, 2])
     with sub_col1:
         # Create a save button to save the caption
         if st.button("保存"):
@@ -123,6 +123,15 @@ with col3:
             with open('./data/label_result_bak.json', 'w', encoding="utf-8") as f:
                 json.dump(st.session_state.annotations, f, ensure_ascii=False, indent=2)
 
+    with sub_col3:
+        if st.button("跳转到") and current_index < len(result) - 1:
+            save_caption()
+            st.session_state.current_index = current_index
+
+    with sub_col4:
+        current_index = st.number_input("Index", value=int(current_index), min_value=0, max_value=len(result) - 1)
+        if current_index is not None:
+            st.session_state.current_index = current_index
 
 # Save all results to a JSON file
 with open(save_path, 'w', encoding="utf-8") as f:
