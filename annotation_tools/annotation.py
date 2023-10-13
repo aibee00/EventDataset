@@ -6,12 +6,17 @@ import cv2
 
 from utils import denorm, get_label_info, plot_bboxes_on_image, H, W
 
+VERSION="v2"
+MANUAL_LABEL = False  # 人工标注: True, GPT-4v标注: False, 人工标注图片顺序是sorted的对应的index不能改变否则就乱了
+
 # 设置页面配置为 "wide"，以占据整个屏幕宽度
 st.set_page_config(layout="wide")
 
 # Load image paths from a JSON file
-img_list_path = "/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/train_img_list.json"
-label_path = "/training/wphu/Dataset/lavis/eventgpt/annotations/vqa_oracle_onlyperson_train.json"
+# img_list_path = "/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/train_img_list.json"  # 从最开始的数据可能只包含红旗和合肥的
+img_list_path = f"/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/train_img_list_{VERSION}.json"  # 数据增强后的从1138714张图片中随机选的
+# label_path = "/training/wphu/Dataset/lavis/eventgpt/annotations/vqa_oracle_onlyperson_train.json"
+label_path = "/training/wphu/Dataset/lavis/eventgpt/annotations/vqa_oracle_train.json"
 
 if len(sys.argv) > 1:
     img_list_path = sys.argv[1]
@@ -20,10 +25,12 @@ if len(sys.argv) > 2:
     label_path = sys.argv[2]
 
 root = Path(img_list_path).parent
-save_path = root / "label_result.json"
+# save_path = root / "label_result.json"
+save_path = root / f"label_result_{VERSION}.json"
 
 result = json.loads(open(img_list_path, 'r').read())
-result.sort()
+if MANUAL_LABEL:
+    result.sort()
 
 labels = json.loads(open(label_path, 'r').read())
 labels.sort(key=lambda x: x['image'])
@@ -36,6 +43,12 @@ if "annotations" not in st.session_state:
     st.session_state.annotations = {}
 
 # load from label_result.json
+if not save_path.exists():
+    # mkdir
+    if not save_path.parent.exists():
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+    save_path.write_text("{}")
+
 label_result = json.loads(open(save_path, 'r').read())
 st.session_state.annotations = label_result
 
@@ -70,9 +83,14 @@ def load_current_image():
         with col2:
             st.write(f"bboxes:")
             bboxes_viz = {}
+            bbox_str = ""
             for i, bbox in enumerate(bboxes_norm):
                 bboxes_viz[i] = bbox
                 st.write(f"{i}: {bbox}")
+                bbox_str += f"{i}: {bbox}\n"
+            
+            st.write(f"bboxes for gpt4v:")
+            st.text(f"{bbox_str}")
         
         label_key = f"label_input_{current_index}"  # Generate unique key
         data_dict["label"] = st.text_area("标签", key=label_key, value=data_dict["label"], height=400)  # Display and edit caption
@@ -89,7 +107,7 @@ def save_caption():
 st.title("图像标注")
 
 # Create a column for image display and next/previous buttons
-col1, _, col2, col3 = st.columns([15, 1, 4, 8])
+col1, _, col2, col3 = st.columns([30, 1, 9, 16])
 
 with col3:
     if st.button("⬆️") and current_index > 0:
@@ -120,8 +138,12 @@ with col3:
     with sub_col2:
         if st.button("备份"):
             # Save all results to a JSON file
-            with open('./data/label_result_bak.json', 'w', encoding="utf-8") as f:
-                json.dump(st.session_state.annotations, f, ensure_ascii=False, indent=2)
+            # sort annotations by key
+            annotations = {int(k): v for k, v in st.session_state.annotations.items()}
+            annotations = {int(k): v for k, v in sorted(annotations.items()) if v}
+            # with open('./data/label_result_bak.json', 'w', encoding="utf-8") as f:
+            with open(f'./data/label_result_{VERSION}_bak.json', 'w', encoding="utf-8") as f:
+                json.dump(annotations, f, ensure_ascii=False, indent=2)
 
     with sub_col3:
         if st.button("跳转到") and current_index < len(result) - 1:
@@ -135,4 +157,6 @@ with col3:
 
 # Save all results to a JSON file
 with open(save_path, 'w', encoding="utf-8") as f:
-    json.dump(st.session_state.annotations, f, ensure_ascii=False, indent=2)
+    annotations = {int(k): v for k, v in st.session_state.annotations.items()}
+    annotations = {int(k): v for k, v in sorted(annotations.items()) if v}
+    json.dump(annotations, f, ensure_ascii=False, indent=2)
