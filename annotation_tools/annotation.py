@@ -3,6 +3,7 @@ import json
 import sys
 from pathlib import Path
 import cv2
+import os 
 
 from utils import denorm, get_label_info, plot_bboxes_on_image, H, W
 
@@ -62,6 +63,19 @@ data_dict = {}
 
 global input_bar
 
+def get_image_name_for_gpt4v(img_path):
+    # 获取子文件夹名称
+    subfolder_name = img_path.split("/")[7]
+
+    ch_name = img_path.split("/")[-2]
+    
+    # 从路径中获取图片文件名
+    img_file_name = os.path.basename(img_path)
+    
+    # 在文件名前添加子文件夹名称作为前缀
+    new_img_file_name = f"{subfolder_name}__{ch_name}__{img_file_name}"
+    return new_img_file_name
+
 # Function to load and display the current image and caption
 def load_current_image():
     if 0 <= current_index < len(result):
@@ -76,6 +90,7 @@ def load_current_image():
         data_dict["img"] = image_path
         data_dict["label"] = st.session_state.annotations.get(str(current_index), "")  # Get existing caption
         st.write(f"第{current_index}/{len(result)}张图片: {image_path}")
+        st.markdown(f"Image name for gpt4v: {get_image_name_for_gpt4v(image_path)}")
         # st.image(data_dict["img"])
         # 将 OpenCV 图像从 BGR 格式转换为 RGB 格式
         opencv_image_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
