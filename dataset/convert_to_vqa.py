@@ -7,10 +7,19 @@ from tqdm import tqdm
 import random
 import cv2
 from copy import deepcopy
+from pathlib import Path
+import numpy as np
+import matplotlib.pyplot as plt
 
+image_path_root = "/ssd/wphu/Dataset/lavis/eventgpt/images"
 
 input_file = sys.argv[1]  # label_train.json / label_test.json ...
 output_file = sys.argv[2]  # vqa_train.json / vqa_test.json ...
+
+if len(sys.argv) > 3:
+    aug_label_path = sys.argv[3]  # label_results_yolos_person_detection.json 解析合并新生成的用于数据扩增的数据
+else:
+    aug_label_path = None
 
 IMG_H = 1440
 IMG_W = 2560
@@ -134,8 +143,12 @@ def convert_to_vqa3(data):
     return vqa
 
 
-def convert_to_vqa4(data):
+def convert_to_vqa4(data, key_types=set(['person'])):
     """ Extract bbox from raw label json and convert to dict
+
+    Parameters: 
+        data: List(Dict)
+        key_types: cls_types to filter
 
     bbox format : "bbox": "person: [1104, 253, 1203, 441], potted plant: [1052, 50, 1207, 189], person: [783, 191, 873, 341], car: [1318, 194, 2119, 805], car: [0, 203, 146, 311], car: [1982, 150, 2396, 458], person: [130, 172, 202, 282], car: [0, 278, 667, 541], person: [892, 154, 1060, 434], potted plant: [1744, 651, 2483, 1387], car: [15, 434, 1497, 1418], person: [1624, 231, 1743, 337], potted plant: [2288, 400, 2558, 815], person: [760, 176, 881, 383], person: [725, 185, 835, 415], person: [1998, 274, 2248, 673], car: [900, 129, 1486, 425], person: [1028, 175, 1163, 435]",
     """
@@ -147,7 +160,11 @@ def convert_to_vqa4(data):
             continue
 
         # to dict format
-        groups = bbox_filter(bbox, max_capacity=10000)
+        groups = bbox_filter(bbox, key_types=key_types, max_capacity=10000)
+
+        # filter out low area ratio
+        groups = filter_out_low_area_ratio(groups, IMG_H, IMG_W)    
+
         if len(groups) > 1:
             print(f"Found more than 6 bboxes: {datum['image']}, {len(groups)} groups: {groups}")
 
@@ -258,16 +275,17 @@ def count_speify_objs(bbox, obj_name="person"):
     return len(persons)
 
 
-def bbox_filter(bbox, max_capacity = 10):
+def bbox_filter(bbox, sep='],', key_types=None, max_capacity = 10):
     """
     bbox: "person: [1104, 253, 1203, 441], potted plant: [1052, 50, 1207, 189], person: [783, 191, 873, 341], car: [1318, 194, 2119, 805], car: [0, 203, 146, 311], car: [1982, 150, 2396, 458], person: [130, 172, 202, 282], car: [0, 278, 667, 541], person: [892, 154, 1060, 434], potted plant: [1744, 651, 2483, 1387], car: [15, 434, 1497, 1418], person: [1624, 231, 1743, 337], potted plant: [2288, 400, 2558, 815], person: [760, 176, 881, 383], person: [725, 185, 835, 415], person: [1998, 274, 2248, 673], car: [900, 129, 1486, 425], person: [1028, 175, 1163, 435]"
     """
-    key_types = set(['person', 'car'])  # to filter
+    if key_types is None:
+        key_types = set(['person'])  # to filter
 
     groups = []  # 如果一张图中有多于6个bbox，我们会分组，每隔6个分一组, 为了不超过max_txt_len
 
     bucket = []
-    boxes = bbox.split('],')
+    boxes = bbox.split(sep)
     num = 0
     for item in boxes:
         name, coords = item.split(':')
@@ -346,12 +364,151 @@ def convert_to_vqa6_onlycar(data):
     return vqa
 
 
+def parse_augment_data(label_path):
+    """ Parse the data from the label file
+
+    Note: The data is new data that is mainly used for data augmentation.
+        The original source path is at `/ssd/wphu/Dataset/DatasetOnlyPerson/`
+
+        We will need to merge the new data into the first dataset to make it
+        compatible with the original dataset.
+
+    Args:
+        label_path (str): Path to the label file
+
+    Returns:
+        data (list): List of data
+    """
+    with open(label_path, 'r') as f:
+        data = json.load(f)
+
+    new_data = []
+    num_to_plot = 10000
+    area_ratios = []
+    for item in tqdm(data):
+    # for i in tqdm(range(num_to_plot)):
+        # item = random.choice(data)
+        image = item['image']
+        bbox = item['bbox']
+        bbox = bbox_filter(bbox, sep='];', key_types=set(['person']), max_capacity=10000)
+
+        # 过滤出 area_ratio < 0.01 的bbox
+        bbox = filter_out_low_area_ratio(bbox, IMG_H, IMG_W)
+
+        if not bbox:
+            continue
+
+        for box in bbox:
+            new_data.append({
+                'image': image,
+                'bbox': box,
+                'dense_caption': box
+            })
+
+        # debug
+        if debug:= False:
+            # image_path = Path(image_path_root) / image
+            # im = cv2.imread(image_path.as_posix())
+
+            # plot bboxes on img
+            bboxes = [eval(box.split(':')[-1]) for box in bbox[0].split(';')]
+
+            has_small_box = False
+            for bbox in bboxes:
+                area_ratio = compute_area_ratio(bbox, IMG_H, IMG_W)
+                
+                area_ratios.append(area_ratio)
+                
+                # if area_ratio < 0.01:
+                #     has_small_box = True
+                #     area_ratios.append(area_ratio)
+            #         bbox = bbox_denorm(bbox, IMG_SIZE[0], IMG_SIZE[1])
+            #         cv2.rectangle(im, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 0, 255), 2)
+            #         break
+            # # save img
+            # if has_small_box:
+            #     save_path = Path(image_path_root).parent / f"debug2/img_{len(new_data)}.jpg"
+            #     if not save_path.parent.exists():
+            #         save_path.parent.mkdir(parents=True)
+            #     cv2.imwrite(save_path.as_posix(), im)
+            #     print(f"Img saved to: {save_path}")
+
+
+    # 统计area_ratio的分布情况，并画出分布图
+    if use_statistic:=False:
+        hist = statistic(area_ratios, bins=20, range=(min(area_ratios), max(area_ratios)))
+        hist_save_path = Path(image_path_root).parent / f"debug/hist_{len(new_data)}_{len(area_ratios)}.png"
+        # 将横轴纵轴对调
+        print(f"hist: {hist}, total: {len(area_ratios)}")
+        plt.hist(area_ratios, bins=20, range=(min(area_ratios), max(area_ratios)))
+        plt.savefig(hist_save_path.as_posix())
+        print(f"Hist saved to: {hist_save_path}")
+    
+    return new_data
+    
+
+def filter_out_low_area_ratio(bbox, H, W):
+    """ Filter out samples that area ratio < 0.01.
+
+    bbox: List[labels], labels: str like: `person:[0.812, 0.313, 0.924, 0.762];person:[0.483, 0.01, 0.514, 0.163]`
+    """
+    bbox_new = []
+    for labels in bbox:
+        label_filtered = []
+        
+        for label in labels.split(';'):
+            cur_box = eval(label.split(':')[-1])
+            area_ratio = compute_area_ratio(cur_box, H, W)
+            if area_ratio >= 0.01:
+                label_filtered.append(label)
+        
+        if label_filtered:
+            bbox_new.append(';'.join(label_filtered))
+    return bbox_new
+
+
+def bbox_denorm(bbox, H, W):
+    """ Denormalize the bbox
+    """
+    return [int(bbox[0] * W), int(bbox[1] * H), int(bbox[2] * W), int(bbox[3] * H)]
+
+
+def compute_area_ratio(bbox, H, W):
+    """ 计算bbox内的面积占整个image的占比
+    """
+    area_img = H * W
+    bbox = bbox_denorm(bbox, H, W)
+    area_box = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
+    return area_box / area_img
+
+def statistic(area_ratios, bins=20, range=(0, 1)):
+    """
+    统计area_ratio的分层情冶，如梅森符号函数
+    """
+    hist, _ = np.histogram(area_ratios, bins=bins, range=range)
+    hist = hist.astype(np.float64)
+    # hist /= hist.sum()
+    return hist
+
+
 with open(input_file) as f:
     data = json.load(f)
 
+# 加载扩增数据，目前 total 20万 左右
+augment_data = None
+if aug_label_path:
+    augment_data = parse_augment_data(aug_label_path)
+    print(f"Total new aug data: {len(augment_data)}")
+
 with open(output_file, 'w') as f:
-    # json.dump(convert_to_vqa2(data), f, indent=2)
-    # json.dump(convert_to_vqa3(data), f, indent=2)
-    # json.dump(convert_to_vqa4(data), f, indent=2)
-    # json.dump(convert_to_vqa5_llava(data), f, indent=2)
-    json.dump(convert_to_vqa6_onlycar(data), f, indent=2)
+    # data = convert_to_vqa2(data)
+    # data = convert_to_vqa3(data)
+    data = convert_to_vqa4(data)
+    # data = convert_to_vqa5_llava(data)
+    # data = convert_to_vqa6_onlycar(data)
+
+    if augment_data is not None: 
+        data = augment_data + data
+        print(f"Total new data: {len(data)}")
+
+    json.dump(data, f, indent=2)
