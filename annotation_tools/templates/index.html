@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>坐标获取工具</title>
+</head>
+<body>
+    <h1>点击图像以获取坐标点</h1>
+    <img src="./test_reprojection_ch01001.jpg" id="image" onclick="getCoordinates(event)">
+    <p>坐标点: <span id="coordinates"></span></p>
+
+    <script>
+        var coordinates = [];
+
+        function getCoordinates(event) {
+            var x = event.clientX - document.getElementById('image').getBoundingClientRect().left;
+            var y = event.clientY - document.getElementById('image').getBoundingClientRect().top;
+            var x2 = event.clientX - document.getElementById('image').getBoundingClientRect().right;
+            var y2 = event.clientY - document.getElementById('image').getBoundingClientRect().bottom;
+            coordinates.push({ x: x, y: y, x2: x2, y2: y2 });
+            updateCoordinates();
+        }
+
+        function updateCoordinates() {
+            var coordinatesElement = document.getElementById('coordinates');
+            coordinatesElement.innerText = JSON.stringify(coordinates);
+        }
+    </script>
+</body>
+</html>
