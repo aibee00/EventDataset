@@ -1,4 +1,5 @@
 import os
+import multiprocessing as mp
 from multiprocessing import Pool
 import cv2
 from PIL import Image
@@ -87,10 +88,11 @@ class YolosObjectDetection():
         return context
 
 
-def process_video(video_path):
+def process_video(video_path, output_path, detector):
         # Create a folder for saving results
         video_name = os.path.basename(video_path).split('.')[0]
         output_folder = os.path.join(output_path, video_name)
+        os.makedirs(output_folder, exist_ok=True)
         
         # Open the video
         cap = cv2.VideoCapture(video_path)
@@ -117,7 +119,7 @@ def process_video(video_path):
                 
                 if any(label == 'person' for label, _, _ in detections):
                     # print(f"Video: {video_name}, Frame: {frame_num}, detections: {detections}")
-                    os.makedirs(output_folder, exist_ok=True)
+                    #os.makedirs(output_folder, exist_ok=True)
                     cv2.imwrite(image_path, frame)
 
                     context = detector.convert_context_description(detections)
@@ -167,14 +169,20 @@ def collect_and_combine_labels(root_dir, label_path_name="labels"):
 
 
 def process_video_with_progress(parameters):
-    video_path, overall_progress = parameters
-    process_video(video_path)
-    overall_progress.update()  # Update overall progress bar
+    # video_path, overall_progress = parameters
+    video_path, output_path, detector = parameters
+    process_video(video_path, output_path, detector)
+    #overall_progress.update()  # Update overall progress bar
 
 
 if __name__ == "__main__":
     # Initialize the YolosObjectDetection instance
     detector = YolosObjectDetection()
+
+    #site_id = "volvo_jinan_xfh_20210617"
+    #site_id = "hongqi_beijing_fkwd_20220109"
+    site_id = "vw_tianjin_jz_20210727"
+    date = site_id.split('_')[-1]
 
     # Define the video paths
     video_paths = [
@@ -183,28 +191,31 @@ if __name__ == "__main__":
         # Add more video paths as needed
     ]
 
-    output_path = "/training/wphu/Dataset/DatasetOnlyPerson/images/vw_hefei_zl_20210727/20210727"
-    video_root = "/training/wphu/Dataset/DatasetOnlyPerson/videos/vw_hefei_zl_20210727/20210727"
+    output_path = f"/training/wphu/Dataset/DatasetOnlyPerson/images/{site_id}/{date}"
+    video_root = f"/training/wphu/Dataset/DatasetOnlyPerson/videos/{site_id}/{date}"
 
     if ProcessAll:= True:
         video_paths = glob(os.path.join(video_root, "*.mp4.cut.mp4"))
+        print(f"number videos: {len(video_paths)}")
 
-    if UseProcess:= False:
+    if UseProcess:= True:
+        mp.set_start_method('spawn')  # 设置启动方法为 'spawn'
         # ------------------------------ 进程实现 ------------------------------------
         # Determine the number of processes you want to use
-        num_processes = 8  # Adjust as needed
+        num_processes = 6  # Adjust as needed
 
         # Create a pool of processes
         with Pool(processes=num_processes) as pool:
             print(f"pool: {pool._pool}\n")
             # Create a tqdm instance to track overall progress
-            overall_progress = tqdm(total=len(video_paths), desc="Videos processed", position=0, leave=True)
+            #overall_progress = tqdm(total=len(video_paths), desc="Videos processed", position=0, leave=True)
             
-            parameters = [(path, overall_progress) for path in video_paths]
+            # parameters = [(path, overall_progress) for path in video_paths]
+            parameters = [(path, output_path, detector) for path in video_paths]
             # Start the processing using the pool of processes
             pool.map(process_video_with_progress, parameters)
             
-            overall_progress.close()  # Close the overall progress bar
+            #overall_progress.close()  # Close the overall progress bar
     
     elif UseThread:= False:
         # ------------------------------- 线程实现 -----------------------------------
