@@ -35,6 +35,8 @@ GRiT format example:
 """
 from copy import deepcopy
 import json
+from pathlib import Path
+import shutil
 import sys
 import os.path as osp
 
@@ -62,7 +64,11 @@ def denorm_boxes_in_caption(caption):
         box_str = cap[start+1:end]
         box_str = box_str.replace(' ', '')
         box_list = box_str.split(',')
-        box = list(map(float, box_list))
+        try:
+            box = list(map(float, box_list))
+        except:
+            print(f"box: {box_list}")
+            import pdb; pdb.set_trace()
         box = denorm(box, H, W)
         box = xyxy2xywh(box)
         box = [int(i) for i in box]
@@ -111,6 +117,33 @@ def split_caption_to_box_caption(labels):
     return captoins_ret, captions, bboxes
 
 
+def image_resave(img_path, save_path):
+    """ Plot boxes on image and save it.
+    Args:
+        img_path: path of image
+        boxes: boxes to be plotted
+    Returns:
+        None
+    """
+    if not Path(save_path).exists():
+        Path(save_path).mkdir(parents=True, exist_ok=True)
+    
+    image_id = img_path.split('images/')[-1]
+    img_path_des = Path(save_path) / image_id
+    if not Path(img_path_des).parent.exists():
+        Path(img_path_des).parent.mkdir(exist_ok=True, parents=True)
+    
+    # If this image has exist -> skip save it by overwrite
+    if not Path(img_path_des).exists():
+        print(f'saving image: {img_path_des}')
+        # cv2.imwrite(img_path.as_posix(), img)
+        shutil.copyfile(img_path, img_path_des)
+        return
+    
+    print(f'image {img_path} already exist, skip saving')
+    return
+
+
 def convert_label_to_grit(label_path, new_label_path, label_path_v1=None, train_img_list_v1=None, images_save_path=None):
     with open(label_path, 'r') as f:
         labels = json.load(f)
@@ -142,7 +175,7 @@ def convert_label_to_grit(label_path, new_label_path, label_path_v1=None, train_
 
         img = label['img']  # "img": "/training/wphu/Dataset/lavis/eventgpt/images/volvo_jinan_xfh_20210617/20210617/ch01002_20210617125000/3204.jpg"
         image_id = img.split('images/')[-1]
-        caption = label['label']
+        caption = label['caption'] if 'caption' in label else label['label']
         global_caption = label['global_caption']
 
         labels_grit['images'].append({
@@ -155,8 +188,10 @@ def convert_label_to_grit(label_path, new_label_path, label_path_v1=None, train_
         captions_ret, captions, boxes = split_caption_to_box_caption(caption)  # 每个box对应一个caption [{"caption": v, "bbox": v}]
 
         # plot_boxes_on_image_resave
-        if images_save_path is not None:
+        if Plot:=False:
             plot_boxes_on_image_resave(img, boxes, images_save_path)
+        else:
+            image_resave(img, images_save_path)
 
         num_boxes_all += len(boxes)
 
@@ -188,12 +223,20 @@ def convert_label_to_grit(label_path, new_label_path, label_path_v1=None, train_
 
 
 if __name__ == "__main__":
-    Plot_box = False
+    # convert_label_to_grit(
+    #     label_path='/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/label_result_v2.json',
+    #     new_label_path='/training/wphu/Dataset/grit/label_result_all_grit_addimg.json',
+    #     label_path_v1="/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/label_result.json",
+    #     train_img_list_v1="/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/train_img_list.json",
+    #     images_save_path='/training/wphu/Dataset/grit/images'
+    # )
+
+    # 英文版
     convert_label_to_grit(
-        label_path='/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/label_result_v2.json',
-        new_label_path='/training/wphu/Dataset/grit/label_result_all_grit.json',
-        label_path_v1="/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/label_result.json",
-        train_img_list_v1="/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/train_img_list.json",
-        images_save_path='/training/wphu/Dataset/grit/images' if Plot_box else None
+        label_path='/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/label_result_v2_en.json',
+        new_label_path='/training/wphu/Dataset/grit/label_result_all_grit_en.json',
+        label_path_v1="/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/label_result_v1_en.json",
+        train_img_list_v1="/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/train_img_list_v1.json",
+        images_save_path='/training/wphu/Dataset/grit/images'
     )
     print('Done!')
