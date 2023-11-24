@@ -11,10 +11,17 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
-image_path_root = "/ssd/wphu/Dataset/lavis/eventgpt/images"
+image_path_root = "/training/wphu/Dataset/lavis/eventgpt/images"
 
-input_file = sys.argv[1]  # label_train.json / label_test.json ...
-output_file = sys.argv[2]  # vqa_train.json / vqa_test.json ...
+# input_file = sys.argv[1]  # label_train.json / label_test.json ...
+# output_file = sys.argv[2]  # vqa_train.json / vqa_test.json ...
+GEN_TRAIN = True
+if GEN_TRAIN:
+    input_file = "/training/wphu/Dataset/lavis/eventgpt/annotations/label_train.json"
+    output_file = "/training/wphu/Dataset/lavis/eventgpt/annotations/vqa_llava_style_box_caption_train.json"
+else:
+    input_file = "/training/wphu/Dataset/lavis/eventgpt/annotations/label_test.json"
+    output_file = "/training/wphu/Dataset/lavis/eventgpt/annotations/vqa_llava_style_box_caption_test.json"
 
 if len(sys.argv) > 3:
     aug_label_path = sys.argv[3]  # label_results_yolos_person_detection.json 解析合并新生成的用于数据扩增的数据
@@ -505,7 +512,7 @@ def vqa8_convert_captions_gen_by_grit_to_llava_style_of_lavis(data):
             bbox = eval(bbox)
             bbox = [0 if c < 0 else c for c in bbox]
             bbox = norm_coords(bbox, IMG_SIZE)
-            caption = f"{desc}<bbox>{bbox}"
+            caption = f"{desc}\n<bbox>{bbox}"
 
             new_item['bbox'] = bbox
             new_item['dense_caption'] = caption.strip()
