@@ -39,7 +39,7 @@ if len(sys.argv) > 2:
 
 root = Path(img_list_path).parent
 # save_path = root / "label_result.json"
-save_path = root / f"label_result_{VERSION}.json"
+save_path = root / f"label_result_{VERSION}_en.json"
 
 result = json.loads(open(img_list_path, 'r').read())
 if MANUAL_LABEL:
@@ -68,6 +68,7 @@ st.session_state.annotations = label_result
 if not getattr(st.session_state, 'current_index', None):
     setattr(st.session_state, 'current_index', 0)
 
+global current_index 
 current_index = st.session_state.current_index
 
 # Initialize data dictionary
@@ -103,9 +104,11 @@ def load_current_image():
 
         if str(current_index) in st.session_state.annotations:
             data_dict["label"] = st.session_state.annotations[str(current_index)].get("label", "")  # Get existing caption
+            data_dict["caption"] = st.session_state.annotations[str(current_index)].get("caption", "")  # Get existing caption
             data_dict["global_caption"] = st.session_state.annotations[str(current_index)].get("global_caption", "")  # Get existing caption
         else:
             data_dict["label"] = ""
+            data_dict["caption"] = ""
             data_dict["global_caption"] = ""
         
         st.write(f"第{current_index}/{len(result)}张图片: {image_path}")
@@ -131,14 +134,20 @@ def load_current_image():
             # 记录全局的描述，包含推理部分
             data_dict["global_caption"] = \
                 st.text_area("全局描述或者推理相关内容:", key=f"global_desc_{current_index}", value=f"{data_dict['global_caption']}", height=600)
-        
+            
         label_key = f"label_input_{current_index}"  # Generate unique key
         data_dict["label"] = st.text_area("标签", key=label_key, value=data_dict["label"], height=400)  # Display and edit caption
+        label_en_key = f"label_english_input_{current_index}"  # Generate unique key
+        data_dict["caption"] = st.text_area("caption EN", key=label_en_key, value=data_dict["caption"], height=400)  # Display and edit caption
+
 
 # Function to save the caption
 def save_caption():
     caption_key = f"label_input_{current_index}"
     data_dict["label"] = st.session_state.get(caption_key, "")  # Get caption from the input box
+
+    label_en_key = f"label_english_input_{current_index}"
+    data_dict["caption"] = st.session_state.get(label_en_key, "")  # Get caption from the input box
 
     global_caption_key = f"global_desc_{current_index}"
     data_dict["global_caption"] = st.session_state.get(global_caption_key, "")  # Get caption from the input box
@@ -176,7 +185,7 @@ with col3:
             save_caption()
     # Display all saved captions
     st.write("已保存的标签:")
-    st.write({str(current_index): st.session_state.annotations.get(str(current_index), {})}, height=800)
+    st.write({str(current_index): st.session_state.annotations.get(str(current_index), {})})
     # st.text_area("已保存的标签:", key=f"label_saved_{current_index}", value=st.session_state.annotations, height=800)
 
     with sub_col2:
