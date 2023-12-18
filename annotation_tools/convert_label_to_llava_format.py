@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import random
 import cv2
 from tqdm import tqdm
 import sys
@@ -173,11 +174,44 @@ def create_multiturns_conversations(conversations, bboxes, labels):
     conversations : List(dict)
     bboxes : List(List(float))
     """
+    ## Used for pretrain at first turn
+    questions = [
+        "<image>\nA detailed image caption for the bounding box:{} in this image.",
+        "<image>\nA detailed image description for the bounding box:{} in this image.",
+        "<image>\nWrite a detailed description for the bounding box:{} in this image.",
+        "<image>\nWrite a description for the bounding box:{} in this image.",
+        "<image>\nProvide a description of what is presented in the the bounding box:{} in this image.",
+        "<image>\nDetailly describe the content of the the bounding box:{} in this image.",
+        "<image>\nCan you detailly explain what you see in the the bounding box:{} in this image?",
+        "<image>\nCould you use a few words to detailly describe what you perceive in the bounding box:{} in this image?",
+        "<image>\nPlease provide a detailed depiction of the bounding box:{} in this picture.",
+        "<image>\nUsing language, provide a detailed account of the bounding box:{} in this image.",
+        "<image>\nUse a few words to detailly illustrate what is happening in the bounding box:{} in this picture."
+    ]
+
+    ## Used for finetune at second turn and multi-turn
+    questions_multi_turns = [
+        "A detailed image caption for the bounding box:{} in this image.",
+        "A detailed image description for the bounding box:{} in this image.",
+        "Write a detailed description for the bounding box:{} in this image.",
+        "Write a description for the bounding box:{} in this image.",
+        "Provide a description of what is presented in the the bounding box:{} in this image.",
+        "Detailly describe the content of the the bounding box:{} in this image.",
+        "Can you detailly explain what you see in the the bounding box:{} in this image?",
+        "Could you use a few words to detailly describe what you perceive in the bounding box:{} in this image?",
+        "Please provide a detailed depiction of the bounding box:{} in this picture.",
+        "Using language, provide a detailed account of the bounding box:{} in this image.",
+        "Use a few words to detailly illustrate what is happening in the bounding box:{} in this picture."
+    ]
+
     captions = []
     for line in labels.split('\n'):
         if line == '':
             continue
         # 提取出每行开头的坐标，例如：[0.789, 0.474, 0.865, 0.976]
+        line = line.strip()
+        # 提取出每行坐标后面的部分 
+        line = line[line.find(']') + 1:]
         line = line.strip()
         captions.append(line)
     
@@ -186,16 +220,30 @@ def create_multiturns_conversations(conversations, bboxes, labels):
 
     boxes_str = ''
     for i, box in enumerate(bboxes):
-        conversations.extend(
-            [{
-                "from": "human",
-                "value": f'请根据图片详细地描述第{i}个人:' + f" {i}: " + str(box) if not USE_EN else f'Please provide a detailed description of the {i}th person in the picture:' + f" {i}: " + str(box)
-            },
-            {
-                "from": "gpt",
-                "value": captions[i]
-            }]
-        )
+        if i == 0:
+            conversations.extend(
+                [{
+                    "from": "human",
+                    # "value": f'请根据图片详细地描述第{i}个人:' + f" {i}: " + str(box) if not USE_EN else f'Please provide a detailed description of the {i}th person in the picture:' + f" {i}: " + str(box)
+                    "value": f'请根据图片详细地描述第{i}个人:' + f" {i}: " + str(box) if not USE_EN else random.choice(questions).format(box)
+                },
+                {
+                    "from": "gpt",
+                    "value": captions[i]
+                }]
+            )
+        else:
+            conversations.extend(
+                [{
+                    "from": "human",
+                    # "value": f'请根据图片详细地描述第{i}个人:' + f" {i}: " + str(box) if not USE_EN else f'Please provide a detailed description of the {i}th person in the picture:' + f" {i}: " + str(box)
+                    "value": f'请根据图片详细地描述第{i}个人:' + f" {i}: " + str(box) if not USE_EN else random.choice(questions_multi_turns).format(box)
+                },
+                {
+                    "from": "gpt",
+                    "value": captions[i]
+                }]
+            )
     return conversations
 
 # 每个person单独拿出来作为一轮对话
@@ -237,16 +285,17 @@ def convert_label_to_llava_v2(label_path, new_label_path, images_save_path, labe
             boxes_str += f'{i}: ' + str(box) + '\n'
 
         # 创建多轮对话过程
-        conversations = [
-            {
-                "from": "human",
-                "value": '<image>\n' + Instructions
-            },
-            {
-                "from": "gpt",
-                "value": "请你提供想要描述对象的boundingbox坐标" if not USE_EN else "Please provide the bounding box coordinates of the object you want to describe."
-            }
-        ]  # 初始化第一轮对话，加入context
+        # conversations = [
+        #     {
+        #         "from": "human",
+        #         "value": '<image>\n' + Instructions
+        #     },
+        #     {
+        #         "from": "gpt",
+        #         "value": "请你提供想要描述对象的boundingbox坐标" if not USE_EN else "Please provide the bounding box coordinates of the object you want to describe."
+        #     }
+        # ]  # 初始化第一轮对话，加入context
+        conversations = []
 
         conversations = create_multiturns_conversations(conversations, boxes, caption)
 
