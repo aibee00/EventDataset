@@ -286,19 +286,34 @@ def vqa7_convert_captions_gen_by_grit_to_llava_format(data, based_bbox=True):
         2. image: image_name
         3. conversations: List, [conversation1, conversation2, ...]
     """
-    # questions_list
+    # questions_list questions for short caption
+    # questions = [
+    #     "<image>\nA short image caption for the bounding box:{} in this image.",
+    #     "<image>\nA short image description for the bounding box:{} in this image.",
+    #     "<image>\nWrite a short description for the bounding box:{} in this image.",
+    #     "<image>\nWrite a description for the bounding box:{} in this image.",
+    #     "<image>\nProvide a description of what is presented in the the bounding box:{} in this image.",
+    #     "<image>\nBriefly describe the content of the the bounding box:{} in this image.",
+    #     "<image>\nCan you briefly explain what you see in the the bounding box:{} in this image?",
+    #     "<image>\nCould you use a few words to describe what you perceive in the bounding box:{} in this image?",
+    #     "<image>\nPlease provide a short depiction of the bounding box:{} in this picture.",
+    #     "<image>\nUsing language, provide a short account of the bounding box:{} in this image.",
+    #     "<image>\nUse a few words to illustrate what is happening in the bounding box:{} in this picture."
+    # ]
+
+    # Stage2 questions for detailed caption
     questions = [
-        "<image>\nA short image caption for the bounding box:{} in this image.",
-        "<image>\nA short image description for the bounding box:{} in this image.",
-        "<image>\nWrite a short description for the bounding box:{} in this image.",
+        "<image>\nA detailed image caption for the bounding box:{} in this image.",
+        "<image>\nA detailed image description for the bounding box:{} in this image.",
+        "<image>\nWrite a detailed description for the bounding box:{} in this image.",
         "<image>\nWrite a description for the bounding box:{} in this image.",
         "<image>\nProvide a description of what is presented in the the bounding box:{} in this image.",
-        "<image>\nBriefly describe the content of the the bounding box:{} in this image.",
-        "<image>\nCan you briefly explain what you see in the the bounding box:{} in this image?",
-        "<image>\nCould you use a few words to describe what you perceive in the bounding box:{} in this image?",
-        "<image>\nPlease provide a short depiction of the bounding box:{} in this picture.",
-        "<image>\nUsing language, provide a short account of the bounding box:{} in this image.",
-        "<image>\nUse a few words to illustrate what is happening in the bounding box:{} in this picture."
+        "<image>\nDetailly describe the content of the the bounding box:{} in this image.",
+        "<image>\nCan you detailly explain what you see in the the bounding box:{} in this image?",
+        "<image>\nCould you use a few words to detailly describe what you perceive in the bounding box:{} in this image?",
+        "<image>\nPlease provide a detailed depiction of the bounding box:{} in this picture.",
+        "<image>\nUsing language, provide a detailed account of the bounding box:{} in this image.",
+        "<image>\nUse a few words to detailly illustrate what is happening in the bounding box:{} in this picture."
     ]
 
     # conversation
