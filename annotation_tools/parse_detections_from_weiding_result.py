@@ -35,6 +35,8 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_file", type=str, help="input file", default="/training/wphu/Dataset/lavis/eventgpt/gpt4v_annotaions/result_new_4000.txt")
     parser.add_argument("--output_file", type=str, help="output file", default="/training/wphu/Dataset/lavis/eventgpt/gpt4v_annotaions/weiding_detections_4000.json")
+    parser.add_argument("--use_provided_image_path", action='store_true', help="If we use the input image_path as prefix path of the img_name")
+    parser.add_argument("--image_path", type=str, help="image path", default="/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/images")
     return parser.parse_args()
 
 
@@ -73,12 +75,16 @@ if __name__ == "__main__":
             bboxes.append(bbox)
 
         # Process img_name format
-        site_id, sub_dir, name = img_name.split("__")
-        if site_id == sub_dir:
-            img_name = site_id + "/" + name
+        if args.use_provided_image_path:
+            img_name = img_name.split('/')[-1]
+            img_name = os.path.join(args.image_path, img_name)
         else:
-            date = site_id.split("_")[-1]
-            img_name = site_id + "/" + date + "/" + sub_dir + "/" + name
+            site_id, sub_dir, name = img_name.split("__")
+            if site_id == sub_dir:
+                img_name = site_id + "/" + name
+            else:
+                date = site_id.split("_")[-1]
+                img_name = site_id + "/" + date + "/" + sub_dir + "/" + name
         print(img_name)
 
         # 归一化
