@@ -4,14 +4,10 @@ import cv2
 from tqdm import tqdm
 import sys
 import os
+import argparse
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 from annotation_tools.utils import denorm
-
-
-Filter_NUM = 413
-USE_EN = True
-MaxNum_forEval = 425
 
 
 def parse_bboxes_from_caption(caption):
@@ -124,13 +120,13 @@ def parse_label_result_v1(label_path, img_list_path):
     return labels_tov2
 
 
-def merge_labels(labels_v1, labels_v2):
-    if not USE_EN:
+def merge_labels(labels_v1, labels_v2, MaxNum_forTrain, use_en_label=True):
+    if not use_en_label:
         labels = labels_v2
     else:
         labels = {}
         for i, (idx, label) in enumerate(labels_v2.items()):
-            if int(idx) > Filter_NUM:
+            if int(idx) > MaxNum_forTrain:
                 continue
             try:
                 label['label'] = label['caption']  # caption is en caption, label is ch caption
@@ -146,14 +142,21 @@ def merge_labels(labels_v1, labels_v2):
 
 ###################################### 以box为单位进行描述 ###############################
 # 每个person单独拿出来作为一个样本
-def convert_label_to_lavis_format(label_path, new_label_path, images_save_path, label_path_v1=None, train_img_list_v1=None, is_test=False):
-    with open(label_path, 'r') as f:
+def convert_label_to_lavis_format(cfg):
+    label_path_v1 = cfg.label_path_v1
+    train_img_list_v1 = cfg.train_img_list_v1 
+    label_path_v2 = cfg.label_path_v2
+    new_label_path = cfg.new_label_path 
+    is_test = cfg.GEN_TEST_DATA 
+    use_en_label = cfg.USE_ENGLISH
+    
+    with open(label_path_v2, 'r') as f:
         labels = json.load(f)
 
-    if label_path_v1 is not None:
+    if not is_test and label_path_v1 is not None:
         labels_v1 = parse_label_result_v1(label_path_v1, train_img_list_v1)
         # merge labels_v1 and labels
-        labels = merge_labels(labels_v1, labels)
+        labels = merge_labels(labels_v1, labels, cfg.MaxNum_forTrain, use_en_label)
 
         with open('test.json', 'w', encoding='utf-8') as f:
             json.dump(labels, f, ensure_ascii=False, indent=4)
@@ -168,10 +171,10 @@ def convert_label_to_lavis_format(label_path, new_label_path, images_save_path, 
     idx_bbox = 0
     for idx, label in tqdm(labels.items()):
         if is_test:
-            if int(idx) < Filter_NUM or int(idx) > MaxNum_forEval:
+            if int(idx) <= cfg.MaxNum_forTrain or int(idx) > cfg.MaxNum_forEval:
                 continue
         else:
-            if int(idx) > Filter_NUM:
+            if int(idx) > cfg.MaxNum_forTrain:
                 continue
 
         img = label['img']  # "img": "/training/wphu/Dataset/lavis/eventgpt/images/volvo_jinan_xfh_20210617/20210617/ch01002_20210617125000/3204.jpg"
@@ -205,32 +208,79 @@ def convert_label_to_lavis_format(label_path, new_label_path, images_save_path, 
     print(f"Number of all of boxes: {num_boxes_all}")
 
 
-if __name__ == "__main__":
-    GEN_TEST_DATA = True
-    if USE_EN:
-        label_path_v1 = "/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/label_result_v1_en.json"
-        label_path = '/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/label_result_v2_en.json'
-        new_label_path = '/training/wphu/Dataset/llava/AibeeQA/label_result_530_llava-style-box_caption_en.json' if not GEN_TEST_DATA else '/training/wphu/Dataset/llava/AibeeQA/label_result_530_llava-style-box_caption_en_test.json'
-        prompt_text_path = './data/prompt_text_en.txt'
-    else:
-        label_path_v1 = "/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/label_result_v1.json"
-        label_path = '/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/label_result_v2.json'
-        new_label_path = '/training/wphu/Dataset/llava/AibeeQA/label_result_530_llava-style-box_caption.json' if not GEN_TEST_DATA else '/training/wphu/Dataset/llava/AibeeQA/label_result_530_llava-style-box_caption_test.json'
-        prompt_text_path = './data/prompt_text.txt'
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--label_path_v1", type=str, default="/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/label_result_v1_en.json")
+    parser.add_argument("--label_path_v2", type=str, default="/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/label_result_v2_en.json")
+    parser.add_argument("--new_label_path", type=str, default="/training/wphu/Dataset/llava/AibeeQA/label_result_530_llava-style-box_caption_en.json")
+    parser.add_argument("--prompt_text_path", type=str, default="./data/prompt_text_en.txt")
+    parser.add_argument("--train_img_list_v1", type=str, default="/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/train_img_list.json")
     
-    train_img_list_v1 = "/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/train_img_list.json"
+    parser.add_argument("--max_num_for_train", type=int, default=413)
+    parser.add_argument("--max_num_for_eval", type=int, default=425)
+    parser.add_argument("--not_use_english", action='store_true', default=False)
+    parser.add_argument("--gen_test_data", action='store_true', default=False)
+    parser.add_argument("--use_augment", action='store_true', default=False)
+    return parser.parse_args()
+
+
+class Config():
+
+    def __init__(self, args):
+        self.MaxNum_forTrain = args.max_num_for_train 
+        self.MaxNum_forEval = args.max_num_for_eval 
+        self.USE_ENGLISH = not args.not_use_english
+        self.GEN_TEST_DATA = args.gen_test_data
+        self.USE_AUGMENT = args.use_augment
+
+        self.label_path_v1 = args.label_path_v1
+        self.label_path_v2 = args.label_path_v2
+        self.new_label_path = args.new_label_path
+        self.prompt_text_path = args.prompt_text_path
+        self.train_img_list_v1 = args.train_img_list_v1
+
+        if self.USE_ENGLISH:
+            self.label_path_v1 = "/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/label_result_v1_en.json"
+            self.label_path_v2 = '/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/label_result_v2_en.json'
+            self.new_label_path = '/training/wphu/Dataset/llava/AibeeQA/label_result_530_llava-style-box_caption_en.json' if not self.GEN_TEST_DATA else '/training/wphu/Dataset/llava/AibeeQA/label_result_530_llava-style-box_caption_en_test.json'
+            
+            if not self.GEN_TEST_DATA and self.USE_AUGMENT:
+                self.MaxNum_forTrain = 99999999
+                self.label_path_v1 = None
+                self.label_path_v2 = '/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/train_label_result_v2_aug.json'
+                self.new_label_path = '/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/label_result_v2_llava-style-box_caption_aug.json'
+
+            self.prompt_text_path = './data/prompt_text_en.txt'
+        else:
+            self.label_path_v1 = "/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/label_result_v1.json"
+            self.label_path_v2 = '/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/label_result_v2.json'
+            self.new_label_path = '/training/wphu/Dataset/llava/AibeeQA/label_result_530_llava-style-box_caption.json' if not self.GEN_TEST_DATA else '/training/wphu/Dataset/llava/AibeeQA/label_result_530_llava-style-box_caption_test.json'
+            self.prompt_text_path = './data/prompt_text.txt'
+    
+    def __repr__(self):
+        return str(self.__dict__)
+    
+    def pretty_print(self):
+        print(" Config ".center(80, '*'))
+        print(json.dumps(self.__dict__, indent=4))
+        print("*" * 80)
+
+
+if __name__ == "__main__":
+    args = parse_args()
+
+    cfg = Config(args)
+    cfg.pretty_print()
 
     # label_path = './data/label_result_v2_400.json'
     
     # new_label_path = './data/label_result_v2_400_llava.json'
 
-    images_save_path = '/training/wphu/Dataset/llava/AibeeQA/images'
+    # images_save_path = '/training/wphu/Dataset/llava/AibeeQA/images'
 
-    Instructions = Path(prompt_text_path).read_text()  # TODO: extra coords of all bboxes
+    # Instructions = Path(prompt_text_path).read_text()  # TODO: extra coords of all bboxes
 
-    # convert_label_to_lavis_format(label_path, new_label_path, images_save_path, label_path_v1, train_img_list_v1)
-
-    # Generate test.json only use label_result_v2_400
-    convert_label_to_lavis_format(label_path, new_label_path, images_save_path, is_test=True)
+    # Generate data
+    convert_label_to_lavis_format(cfg)
 
 
