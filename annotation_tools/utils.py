@@ -82,7 +82,7 @@ def plot_bboxes_on_image(image, bboxes, color=[0, 0, 255], linewidth=2):
     return image
 
 
-def get_label_info(image_path, label_map, info_name='bbox'):
+def get_label_info(image_path, label_map, info_name='bbox', use_relative_path=True):
     """ Get label info from image_path
 
     1. parse image_id from image_path
@@ -107,7 +107,7 @@ def get_label_info(image_path, label_map, info_name='bbox'):
     else:        
         relative_path = imgpath_obj.relative_to(imgpath_obj.parent.parent)
 
-    image_id = relative_path.as_posix()  # Convert to posix path
+    image_id = relative_path.as_posix() if use_relative_path else image_path  # Convert to posix path
     label_infos = label_map.get(image_id, {})
     bboxes = label_infos.get(info_name, "")
     bboxes_list = parse_bboxes_to_list_from_str(bboxes)

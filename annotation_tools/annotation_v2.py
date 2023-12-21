@@ -40,6 +40,7 @@ if len(sys.argv) > 2:
 root = Path(img_list_path).parent
 # save_path = root / "label_result.json"
 save_path = root / f"label_result_{VERSION}_en.json"
+# save_path = root / f"train_label_result_v2_aug.json"
 
 result = json.loads(open(img_list_path, 'r').read())
 if MANUAL_LABEL:
@@ -95,7 +96,8 @@ def load_current_image():
         image_path = result[current_index]
 
         # Get bounding box info
-        bboxes_norm = get_label_info(image_path, label_map, "bbox")
+        use_relative_path = False if next(iter(label_map)).startswith('/') else True
+        bboxes_norm = get_label_info(image_path, label_map, "bbox", use_relative_path=use_relative_path)
         bboxes_norm.sort(key=lambda x: x[0])  # Sort bboxes by x coordinate
         bboxes = denorm(bboxes_norm, H, W)
         img = plot_bboxes_on_image(image_path, bboxes)

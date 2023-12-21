@@ -14,7 +14,9 @@ VERSION="v2"
 
 # label_path = "/training/wphu/Dataset/lavis/eventgpt/annotations/vqa_oracle_onlyperson_train.json"
 label_path = "/training/wphu/Dataset/lavis/eventgpt/annotations/vqa_oracle_train.json"
+label_path = "/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/detections/detection_result.json"
 save_path = f"/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/train_img_list_{VERSION}.json"
+save_path = f"/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/train_img_list_{VERSION}.json"
 
 
 if len(sys.argv) > 1:
@@ -41,7 +43,7 @@ class DataInfoGen():
         else:
             self.image_path = image_path
 
-    def get_all_img_list(self, max_imgs=1000):
+    def get_all_img_list(self, max_imgs=None):
         """
         获取所有图片列表, 并从列表中随机挑选一定数量的图片作为数据集的图片列表
         """
@@ -62,8 +64,13 @@ class DataInfoGen():
 
         # randomly select
         if max_imgs is not None:
+            if max_imgs > len(img_ids_all):
+                max_imgs = len(img_ids_all)
+                print(f'Max images {max_imgs}')
             img_ids = random.sample(img_ids_all, max_imgs)
             print(f'Randomly select {len(img_ids)} images from {len(label_result)} images')
+        else:
+            img_ids = img_ids_all
 
         return img_ids
     
@@ -74,9 +81,10 @@ class DataInfoGen():
         # save result
         with open(self.save_path, 'w') as f:
             json.dump(img_list, f, indent=2)
+            print(f"Total samples: {len(img_list)}")
             print(f'Save img list to {self.save_path}')
 
-    def __call__(self, max_imgs=1000) -> Any:
+    def __call__(self, max_imgs=None) -> Any:
         img_list = self.get_all_img_list(max_imgs)
         self.save(img_list)
         
@@ -84,4 +92,4 @@ class DataInfoGen():
 
 if __name__ == "__main__":
     data_info_gen = DataInfoGen(label_path=label_path, save_path=save_path)
-    data_info_gen(max_imgs=4000)
+    data_info_gen(max_imgs=None)
