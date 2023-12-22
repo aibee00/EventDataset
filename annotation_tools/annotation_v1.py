@@ -164,7 +164,7 @@ with col1:
     load_current_image()
 
 with col3:
-    sub_col1, sub_col2, sub_col3, sub_col4 = st.columns([1, 1, 1, 2])
+    sub_col1, sub_col2, sub_col3, sub_col4, sub_col5 = st.columns([1, 1, 1, 1, 2])
     with sub_col1:
         # Create a save button to save the caption
         if st.button("保存"):
@@ -191,11 +191,35 @@ with col3:
                 json.dump(annotations_en, f, ensure_ascii=False, indent=2)
 
     with sub_col3:
+        if st.button("中英合并"):
+            label_result_merged = {}
+            annotations_ch = {int(k): v for k, v in st.session_state.annotations.items()}
+            annotations_en = {int(k): v for k, v in st.session_state.annotations_en.items()}
+
+            for index, image_path in enumerate(result):
+                label_ch = annotations_ch.get(index, "")
+                label_en = annotations_en.get(index, "")
+                
+                if not label_ch and not label_en:
+                    continue
+
+                label_result_merged[str(index)] = {
+                    "label": label_ch,
+                    "caption": label_en,
+                    "img": image_path,
+                    "global_caption": ""
+                }
+            
+            save_path_merged = root / f"label_result_v1_merged.json"
+            with open(save_path_merged, 'w', encoding="utf-8") as f:
+                json.dump(label_result_merged, f, ensure_ascii=False, indent=4)
+
+    with sub_col4:
         if st.button("跳转到") and current_index < len(result) - 1:
             save_caption()
             st.session_state.current_index = current_index
 
-    with sub_col4:
+    with sub_col5:
         current_index = st.number_input("Index", value=int(current_index), min_value=0, max_value=len(result) - 1)
         if current_index is not None:
             st.session_state.current_index = current_index
