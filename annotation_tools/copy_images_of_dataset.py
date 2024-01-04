@@ -24,7 +24,7 @@ def main(args):
     # Parse label result and get all images
     labels = json.loads(open(args.label_dir, 'r').read())
 
-    image_list = [label['image'] for label in labels]
+    image_list = set([label['image'] for label in labels])
 
     save_dir = Path(args.output_dir)
     if not save_dir.exists():
