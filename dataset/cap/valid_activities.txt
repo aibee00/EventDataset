@@ -1,0 +1,16 @@
+person_leans_agains_car
+person_closes_car_hood
+person_flips_down_car_wipers
+person_opens_car_hood
+person_flips_up_car_wipers
+person_kicks_car_tires
+person_walks_around_car
+person_polishes_car_with_rag
+person_closes_car_trunk
+person_opens_car_trunk
+person_loads_car
+person_enters_car
+person_exits_car
+person_opens_car_door
+person_closes_car_door
+person_unloads_car
