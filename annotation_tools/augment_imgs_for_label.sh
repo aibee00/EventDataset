@@ -58,11 +58,11 @@ python annotation_tools/parse_detections_result.py \
 # Step4
 python annotation_tools/gen_img_list.py \
     /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/detections/detection_result.json  \
-    /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/train_img_list_v2.json
+    /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/train_img_list_expand.json
 
 # Step5
 # 这一步主要是为了使用 iou 匹配过滤掉无效的样本，并且生成对应的 labels 文件(需要重新按照标注的img_list顺序排序)。
-python augment_imgs_for_label.py \
+python annotation_tools/augment_imgs_for_label.py \
     --label_result_v1_json /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/label_result_v1_en.json \
     --train_img_list_v1 /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/train_img_list.json \
     --label_result_v2_json /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/label_result_v2_en.json \
@@ -70,14 +70,38 @@ python augment_imgs_for_label.py \
     --img_detections_json /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/detections/detection_result.json \
     --save_dir /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand \
     --window 5 \
-    --img_list_path /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/train_img_list_v2.json \
+    --img_list_path /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/train_img_list_expand.json \
+    --iou_threshold 0.5 \
+    --Filter_NUM 413 \
+    --EN_IOU_MATCH \
+    --RESORT_ACCORDING_TO_IMG_LIST
+
+# Run for converting bbox to person index version
+python annotation_tools/change_detection_result_image_path.py \
+    /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/detections/detection_result.json \
+    /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand_person_index/detection_result_person_index.json \
+    /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/images \
+    /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand_person_index/images
+
+python annotation_tools/gen_img_list.py \
+    /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand_person_index/detection_result_person_index.json  \
+    /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand_person_index/train_img_list_expand_person_index.json
+
+python annotation_tools/augment_imgs_for_label.py \
+    --label_result_v1_json "" \
+    --train_img_list_v1 "" \
+    --label_result_v2_json /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/person_index/label_result_v1v2_person_index.json \
+    --img_dir /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/images_with_bboxes/ \
+    --img_detections_json /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand_person_index/detection_result_person_index.json \
+    --save_dir /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand_person_index/train_label_result_v1v2_person_index_aug.json \
+    --window 5 \
+    --img_list_path /training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand_person_index/train_img_list_expand_person_index.json \
     --iou_threshold 0.5 \
     --Filter_NUM 413 \
     --EN_IOU_MATCH \
     --RESORT_ACCORDING_TO_IMG_LIST
 
 # Step6
-python annotation_tools/convert_label_to_lavis_format.py \
-    --use_augment
+python annotation_tools/convert_label_to_lavis_format.py --use_augment
 
 

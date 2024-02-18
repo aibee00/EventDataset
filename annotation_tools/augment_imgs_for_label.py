@@ -10,6 +10,7 @@ import json
 import argparse
 import bisect
 import shutil
+import time
 
 from pathlib import Path
 from tqdm import tqdm
@@ -34,11 +35,28 @@ def args_parser():
     return args
 
 
+def robust_copy(src, dst, max_retries=5, wait=1):
+    for attempt in range(max_retries):
+        try:
+            shutil.copy(src, dst)
+            break
+        except BlockingIOError:
+            if attempt < max_retries - 1:
+                time.sleep(wait)  # wait before retrying
+            else:
+                raise
+
+
 class DatasetExpander():
     def __init__(self, label_result_v1_json, train_img_list_v1, label_result_v2_json, img_dir, img_detections_json, save_dir, Filter_NUM, EN_IOU_MATCH = True, iou_threshold=0.5):
         self.Filter_NUM = Filter_NUM
-        self.labels = self._load_labels(label_result_v1_json, train_img_list_v1, label_result_v2_json, Filter_NUM)
-        self.img_dir = img_dir  # 这里由于 image_name中已经包含了images的路径，所以这里没有用上
+
+        if not label_result_v1_json and not train_img_list_v1:
+            self.labels = self._load_merged_labels(label_result_v2_json, Filter_NUM)
+        else:
+            self.labels = self._load_labels(label_result_v1_json, train_img_list_v1, label_result_v2_json, Filter_NUM)
+        
+        self.img_dir = img_dir  # 不要删！最初这里由于 image_name中已经包含了images的路径，所以这里没有用上, -> new update 在生成person_index数据时有使用
         
         # Load images's detections
         self.detection_map = self.load_detections(img_detections_json)
@@ -67,6 +85,15 @@ class DatasetExpander():
         for i, (idx, label) in enumerate(labels_v1.items()):
             # 这里之所以使用 -idx 表示id，是为了不改变label_v2的id顺序，因为后面需要根据id过滤掉还没进行check的样本
             labels[str(-(idx + 1))] = label
+        return labels
+    
+    def _load_merged_labels(self, label_result_merged_json, Filter_NUM):
+        labels_merged = json.loads(open(label_result_merged_json, 'r').read())
+        labels = {}
+        for i, (idx, label) in enumerate(labels_merged.items()):
+            if int(idx) > Filter_NUM:
+                continue
+            labels[str(i)] = label
         return labels
 
     @staticmethod
@@ -180,9 +207,13 @@ class DatasetExpander():
         img_name = image_path.name
         sub_paths = image_dir.as_posix().split('/')
         if new_image_dir is None:
-            new_image_dir = self.save_dir / 'images'
+            save_dir = Path(self.save_dir)
+            image_save_dir = save_dir.parent if save_dir.name.endswith('.json') else save_dir
+            new_image_dir = image_save_dir / 'images'
             new_image_dir.mkdir(parents=True, exist_ok=True)
-        new_img_path = new_image_dir / f'{sub_paths[-3]}__{sub_paths[-1]}__{img_name}'
+        if '__' in img_name:
+            return new_image_dir / img_name
+        new_img_path = Path(new_image_dir) / f'{sub_paths[-3]}__{sub_paths[-1]}__{img_name}'
         return new_img_path
 
     def filter_images_in_window(self, image_path, window=5):
@@ -237,7 +268,7 @@ class DatasetExpander():
             index_end = bisect.bisect_right(images_names, cur_name + window * 12)
             cur_index = images_names.index(cur_name)
             images_names_expand = [f"{img:04}" for img in images_names[index_start:index_end]]
-            print(f"[ts_id-win, ts_id, ts_id+win]:  [{index_start} \t{cur_index} \t{index_end}]")
+            # print(f"[ts_id-win, ts_id, ts_id+win]:  [{index_start} \t{cur_index} \t{index_end}]")
             left_expand = [f"{img:04}" for img in images_names[index_start:cur_index + 1]]  # include cur_index
             right_expand = [f"{img:04}" for img in images_names[cur_index:index_end]]  # include cur_index
 
@@ -283,7 +314,7 @@ class DatasetExpander():
             else:
                 num_not_matched += 1
                 # print(f"Not matched!: [{1- cost_matrix[rid][cid]:.4f}]")
-        print(f"num_not_matched in cur window: {num_not_matched} / {len(row_ind)}")
+        # print(f"num_not_matched in cur window: {num_not_matched} / {len(row_ind)}")
         row_ind, col_ind = row_ind_filter, col_ind_filter
 
         matched = True if len(row_ind) > 0 else False
@@ -380,7 +411,7 @@ class DatasetExpander():
         Returns:
             None.
         """
-        if not self.save_dir.exists():
+        if Path(self.save_dir).is_dir() and not self.save_dir.exists():
             self.save_dir.mkdir(parents=True, exist_ok=True)
 
         new_labels = {}
@@ -402,12 +433,14 @@ class DatasetExpander():
                     aug_img_name = item
                 
                 aug_img_src_path = image_path.parent / f'{aug_img_name}.jpg'
+                if 'expand' in self.img_dir:
+                    aug_img_src_path = self._get_new_img_path(aug_img_src_path, new_image_dir=self.img_dir)
                 new_img_des_path = self._get_new_img_path(aug_img_src_path)  # 这里需要重新获取new_img_path
 
                 # copy image
                 if not new_img_des_path.exists():
                     print(f"Copying image {aug_img_src_path} to {new_img_des_path}")
-                    shutil.copy(aug_img_src_path, new_img_des_path)
+                    robust_copy(aug_img_src_path, new_img_des_path)
                 else:
                     # print(f"Image {new_img_des_path} already exists, skipping...")
                     pass
@@ -488,7 +521,9 @@ if __name__ == '__main__':
     RESORT_ACCORDING_TO_IMG_LIST = args.RESORT_ACCORDING_TO_IMG_LIST
     Filter_NUM = args.Filter_NUM  # 只标注到425, [0-413]训练集，[414~425]测试集
 
-    label_save_path = osp.join(args.save_dir, 'train_label_result_v2_aug.json')  # save label result path.
+    label_save_path = args.save_dir
+    if not args.save_dir.endswith('.json'):
+        label_save_path = osp.join(args.save_dir, 'train_label_result_v2_aug.json')  # save label result path.
 
     dataset_expander = DatasetExpander(
         args.label_result_v1_json,
