@@ -1,14 +1,22 @@
+import datetime
+import time
 import os
 import os.path as osp
 import numpy as np
 import cv2
 from PIL import Image, ImageDraw, ImageFont
+from pathlib import Path
 
-from SharedUtils import TrackWrapperWithoutStore
+from SharedUtils import TrackWrapperWithoutStore, convert_unix_time_to_ts
+from proto import person_tracking_result_pb2
 
 # 创建log管理器
 import logging
 import multiprocessing
+import requests
+
+from dataset.gen_grid_cameras_map import get_best_camera_views
+import sys
 logger = logging.getLogger(__name__)
 
 
@@ -29,13 +37,15 @@ def ts_to_string(ts, sec_size=1, sep=":"):
     return "{0:02d}{3}{1:02d}{3}{2:02d}".format(h, m, s, sep)
 
 
-def string_to_ts(str, sep=":"):
-    if sep and sep in str:
-        h,m,s = str.split(sep)
+def string_to_ts(string, sep=":"):
+    if isinstance(string, datetime.time):
+        return (string.hour * 3600) + (string.minute * 60) + string.second
+    elif sep and sep in string:
+        h,m,s = string.split(sep)
     else:
-        h = str[0:2]
-        m = str[3:5]
-        s = str[6:8]
+        h = string[0:2]
+        m = string[3:5]
+        s = string[6:8]
     return int(h)*3600 + int(m)*60 + int(s)
 
 
@@ -68,6 +78,39 @@ def get_location(pid_file):
         pid2xy['vel'][int(tkr.ts_vec[i])] = tkr.vel_vec[i]
         pid2xy['acc'][int(tkr.ts_vec[i])] = tkr.acc_vec[i]
     pid_locs[tkr.pid] = pid2xy
+
+    return pid_locs
+
+
+# get location of pid_output pb, convert to location format same as new_xy_locs
+def get_location_pid_output(fname):
+    """
+    Read proto and return tracks of pid
+    """
+    tracks_from_pb = person_tracking_result_pb2.Track()
+    with open(fname, 'rb') as f:
+        tracks_from_pb.ParseFromString(f.read())
+
+    # only get locs
+    pid_locs = {}
+    pid2xy = {'loc': {}, 'vel': {}, 'acc': {}}
+    locs = {}
+    for trk in tracks_from_pb.single_view_tracks:
+        for det in trk.detections:
+            ts = int(convert_unix_time_to_ts(det.det_time_msec))
+            locs.setdefault(ts, []).append(np.array([det.map_pos.x, det.map_pos.y]))
+
+    # get avg loc for each ts
+    for ts in locs:
+        locs[ts] = np.mean(locs[ts], axis=0)
+
+    locs = sorted(locs.items(), key=lambda x: x[0])
+
+    for ts, loc in locs:
+        pid2xy['loc'][ts] = loc
+        pid2xy['vel'][ts] = 0.0
+        pid2xy['acc'][ts] = 0.0
+        pid_locs[tracks_from_pb.pid] = pid2xy
 
     return pid_locs
 
@@ -236,3 +279,146 @@ def merge_bboxes_at_one_channel(bboxes, channel=None, score_thres=0.5):
 
     return bbox_merge
 
+
+# 给出pid、location和时间段，返回覆盖到该location的所有channels
+def get_cover_channels(grid_cameras_map, pid, loc, time_slice):
+    """ 获取在时间段time_slice内pid所在位置有覆盖的cameras
+
+    Args:
+        grid_cameras_map: 预先生成的grid to cameras的映射关系
+        pid: 某个人的pid
+        loc: 轨迹文件
+        time_slice: 可以是一段时间[st, et]或一个时刻ts
+    Returns:
+        channels: set of channels
+    """
+    channels = dict()
+    if isinstance(time_slice, list):
+        for ts in range(time_slice[0], time_slice[1]):
+            if pid not in loc:
+                continue
+            if ts not in loc[pid]['loc']:
+                continue
+
+            location = loc[pid]['loc'][ts]
+            best_cameras = get_best_camera_views(location, grid_cameras_map)
+            for ch in best_cameras:
+                channels.setdefault(ch, 0)
+                channels[ch] += 1
+        channels = {ch: channels[ch] for ch in channels if channels[ch] > 0}
+        channels = sorted(channels.items(), key=lambda x: x[1], reverse=True)
+        channels = [ch for ch, _ in channels]
+    else:
+        if pid not in loc:
+            return channels
+        if time_slice not in loc[pid]['loc']:
+            return channels
+
+        location = loc[pid]['loc'][time_slice]
+        best_cameras = get_best_camera_views(location, grid_cameras_map)
+        return best_cameras
+
+    return channels
+
+
+# 根据开始时间获取时间段
+def get_video_time_range(start_time, offset):
+    """
+    start_time: 开始时间
+    offset: 如[10, 20]
+    :return: tuple(int, int)
+    """
+    if isinstance(start_time, str):
+        start_time = hms2sec(int(start_time))
+    end_time = start_time + offset
+    return start_time, end_time
+
+
+# 定义get_overlap_time_range函数，输入两个时间段，返回overlap时间段
+def get_overlap_time_range(time_range1, time_range2):
+    """
+    time_range1: (start_time1, end_time1)
+    time_range2: (start_time2, end_time2)
+    """
+    if time_range1[0] >= time_range2[1] or time_range1[1] <= time_range2[0]:
+        return None
+    start_time = max(time_range1[0], time_range2[0])
+    end_time = min(time_range1[1], time_range2[1])
+    return start_time, end_time
+
+
+# 计算距离给定时间最近的整15分钟点
+def get_nearest_slice_start_time(given_time, interval=15):
+    """
+    time: 时间戳
+    """
+    if isinstance(given_time, int):
+        given_time = ts_to_string(given_time)
+    # 给定的时间
+    if isinstance(given_time, str):
+        given_time = datetime.datetime.strptime(given_time, "%H:%M:%S")
+    elif isinstance(given_time, datetime.time):
+        given_time = datetime.datetime.combine(datetime.date.today(), given_time)
+    
+    # 计算距离给定时间最近的整15分钟点
+    nearest_15_min = given_time - datetime.timedelta(minutes=given_time.minute % interval, seconds=given_time.second)
+    # # 转换为字符串表示
+    # nearest_15_min_str = nearest_15_min.strftime("%H:%M:%S")
+    return nearest_15_min.time()
+
+
+# 为某个对象增加(或者更新/设置)多个新的属性
+def set_properties(obj, **properties):
+    if isinstance(obj, dict):
+        obj.update(properties)
+    else:
+        for key, value in properties.items():
+            setattr(obj, key, value)
+    return obj
+
+
+# 下载文件包
+def download(url, filename):
+    """
+    下载文件
+
+    Args:
+        url: 文件url
+        filename: 文件路径
+    """
+    filename = Path(filename)
+    if not filename.exists():
+        try:
+            filename.parent.mkdir(parents=True, exist_ok=True)
+            print(f"Downloading {url} to {filename}...")
+            with requests.get(url, stream=True) as r:
+                r.raise_for_status()
+                total_size = int(r.headers.get('content-length', 0))
+                chunk_size = 8192  # 增大 chunk_size
+                downloaded_size = 0
+                with open(filename, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=chunk_size):
+                        if chunk:
+                            f.write(chunk)
+                            downloaded_size += len(chunk)
+                            # 更新进度条
+                            done = int(50 * downloaded_size / total_size)
+                            sys.stdout.write('\r[{}{}] {:.2f}%'.format('█' * done, '.' * (50 - done), (downloaded_size / total_size) * 100))
+                            sys.stdout.flush()
+                    sys.stdout.write('\n')
+            print("Download completed.")
+        except requests.exceptions.HTTPError as err:
+            print(f"HTTP错误: {err}")
+            raise err
+        except requests.exceptions.RequestException as err:
+            print(f"下载过程中出错: {err}")
+            raise err
+        except Exception as err:
+            print(f"发生错误: {err}")
+            raise err
+        
+
+def is_directory_empty(directory):
+    """检查指定的目录是否为空"""
+    # 使用 pathlib.Path.iterdir() 迭代目录中的内容
+    return not any(Path(directory).iterdir())
