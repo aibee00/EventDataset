@@ -247,8 +247,10 @@ class Config():
             if not self.GEN_TEST_DATA and self.USE_AUGMENT:
                 self.MaxNum_forTrain = 99999999
                 self.label_path_v1 = None
-                self.label_path_v2 = '/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/train_label_result_v2_aug.json'
-                self.new_label_path = '/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/label_result_v2_llava-style-box_caption_aug.json'
+                # self.label_path_v2 = '/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/train_label_result_v2_aug.json'
+                self.label_path_v2 = '/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand_person_index/train_label_result_v1v2_person_index_aug.json'
+                # self.new_label_path = '/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/label_result_v2_llava-style-box_caption_aug.json'
+                self.new_label_path = '/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/label_result_v2_llava-style-box_caption_aug_person_index.json'
 
             self.prompt_text_path = './data/prompt_text_en.txt'
         else:
