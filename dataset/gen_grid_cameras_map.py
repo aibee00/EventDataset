@@ -466,6 +466,17 @@ def plot_point_on_floor(args, point, best_cameras):
     cv2.imwrite(file_name, img)
 
 
+def gen_grid_cameras_map(camera_info_path, store_infos_path):
+    area_annotation_dir = os.path.join(store_infos_path, 'area_annotation.json')
+    area_annotation = json.loads(open(area_annotation_dir, 'rb').read())
+
+    # Gen grid to cameras map
+    coords = area_annotation["region_areas"]["STORE:0"]["coords"]
+    store_region = FastGridRegion(coords)
+    grid_cameras_map = store_region.gen_grid_to_cameras_map(camera_info_path)
+    return grid_cameras_map
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--camera_info_path', type=str, help="camera_info_path", default="/ssd/wphu/CameraInfos/GACNE/guangzhou/xhthwk")
@@ -478,13 +489,7 @@ if __name__ == "__main__":
     if not os.path.exists(args.save_path):
         os.makedirs(args.save_path)
     save_dir = os.path.join(args.save_path, './grid_cameras_map.json')
-    area_annotation_dir = os.path.join(args.store_infos_path, 'area_annotation.json')
-    area_annotation = json.loads(open(area_annotation_dir, 'rb').read())
-
-    # Gen grid to cameras map
-    coords = area_annotation["region_areas"]["STORE:0"]["coords"]
-    store_region = FastGridRegion(coords)
-    grid_cameras_map = store_region.gen_grid_to_cameras_map(args.camera_info_path)
+    grid_cameras_map = gen_grid_cameras_map(args.camera_info_path, args.store_infos_path)
     with open(save_dir, 'w') as f:
         json.dump(grid_cameras_map, f, indent=2)
 

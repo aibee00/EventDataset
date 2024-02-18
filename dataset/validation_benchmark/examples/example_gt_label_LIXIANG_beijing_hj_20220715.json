@@ -1,0 +1,1708 @@
+[
+    {
+      "date": "20220715",
+      "end_time": "14:30:00",
+      "ignore_events": {
+        "REGION_VISIT": []
+      },
+      "labels": {
+        "REGION_VISIT": [
+          {
+            "EndTime": "14:01:19",
+            "Pid": "mv_id_140037_000126",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:00:42",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:02:53",
+            "Pid": "mv_id_140046_000128",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:01:26",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:04:28",
+            "Pid": "mv_id_140037_000126",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:01:27",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:03:42",
+            "Pid": "mv_id_140046_000128",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:03:08",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:04:06",
+            "Pid": "mv_id_140057_000129_cls_0",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:03:11",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:08:15",
+            "Pid": "mv_id_140129_000131",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:06:55",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:20:44",
+            "Pid": "N000109_140840",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:08:54",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:19:37",
+            "Pid": "N000110_140840",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:08:56",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:17:02",
+            "Pid": "N000111_141421",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:14:30",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:16:06",
+            "Pid": "mv_id_140046_000128",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:13:13",
+            "Type": "REGION_VISIT",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FN"
+          },
+          {
+            "EndTime": "14:20:30",
+            "Pid": "N000112_141740",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:17:53",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:22:59",
+            "Pid": "N000114_142012",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:20:26",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:21:44",
+            "Pid": "N000115_142021",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:20:31",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:23:02",
+            "Pid": "N000116_142020",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:20:32",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:22:35",
+            "Pid": "N000117_142033",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:20:39",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:22:32",
+            "Pid": "N000119_142035",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:20:46",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:22:12",
+            "Pid": "N000112_141740",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:20:46",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:24:03",
+            "Pid": "N000109_140840",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:20:55",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:24:00",
+            "Pid": "N000110_140840",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:20:56",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:25:13",
+            "Pid": "N000114_142012",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:23:09",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:25:11",
+            "Pid": "N000116_142020",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:23:12",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:26:02",
+            "Pid": "N000115_142021",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:24:41",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:26:01",
+            "Pid": "N000114_142012",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:25:24",
+            "Type": "REGION_VISIT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          }
+        ]
+      },
+      "start_time": "14:00:00",
+      "verification_sampling_method": {
+        "CAR_INOUT": {
+          "sampling": "select_time",
+          "sampling_range": [
+            "14:00:00",
+            "15:00:00"
+          ]
+        },
+        "CAR_VISIT": {
+          "sampling": "select_time",
+          "sampling_range": [
+            "14:00:00",
+            "14:30:00"
+          ]
+        },
+        "INDIVIDUAL_RECEPTION": {
+          "sampling": "select_time",
+          "sampling_range": [
+            "15:00:00",
+            "15:30:00"
+          ]
+        },
+        "STORE_INOUT": {
+          "sampling": "select_time",
+          "sampling_range": [
+            "14:00:00",
+            "15:00:00"
+          ]
+        }
+      }
+    },
+    {
+      "date": "20220715",
+      "end_time": "15:00:00",
+      "ignore_events": {
+        "ROOM_INOUT": [],
+        "STORE_INOUT": [
+          {
+            "EndTime": "14:33:06",
+            "GroupID": "",
+            "InDoorID": "1",
+            "OutDoorID": "1",
+            "Pid": "mv_id_113447_000046",
+            "StartTime": "13:37:55",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "14:41:33",
+            "GroupID": "",
+            "InDoorID": "1",
+            "OutDoorID": "1",
+            "Pid": "mv_id_102614_000018",
+            "StartTime": "13:37:58",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "14:46:54",
+            "GroupID": "",
+            "InDoorID": "1",
+            "OutDoorID": "1",
+            "Pid": "mv_id_141839_000148_split_20220715065146_03_cls_1",
+            "StartTime": "13:38:31",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "14:10:38",
+            "GroupID": "",
+            "InDoorID": "2",
+            "OutDoorID": "1",
+            "Pid": "mv_id_141839_000148_split_20220715065146_03_cls_0",
+            "StartTime": "13:45:42",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "16:18:06",
+            "GroupID": "",
+            "InDoorID": "UNKNOWN_DOOR",
+            "OutDoorID": "UNKNOWN_DOOR",
+            "Pid": "N000256_181913_cls_0",
+            "StartTime": "13:45:56",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "16:10:12",
+            "GroupID": "",
+            "InDoorID": "1",
+            "OutDoorID": "2",
+            "Pid": "tpid_N000070_124045_split_20220715070807_02",
+            "StartTime": "13:54:00",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "16:00:49",
+            "GroupID": "",
+            "InDoorID": "1",
+            "OutDoorID": "1",
+            "Pid": "N000097_133915_cls_0",
+            "StartTime": "13:54:02",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "14:00:13",
+            "GroupID": "",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000003_080239",
+            "StartTime": "13:54:38",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "16:09:24",
+            "GroupID": "",
+            "InDoorID": "2",
+            "OutDoorID": "1",
+            "Pid": "N000108_135813_cls_0",
+            "StartTime": "13:58:16",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "15:04:32",
+            "GroupID": "",
+            "InDoorID": "UNKNOWN_DOOR",
+            "OutDoorID": "UNKNOWN_DOOR",
+            "Pid": "mv_id_105210_000029_cls_0",
+            "StartTime": "14:00:44",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "14:02:20",
+            "GroupID": "",
+            "InDoorID": "UNKNOWN_DOOR",
+            "OutDoorID": "UNKNOWN_DOOR",
+            "Pid": "N000003_080239",
+            "StartTime": "14:01:10",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "14:09:11",
+            "GroupID": "",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000003_080239",
+            "StartTime": "14:04:36",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "14:09:55",
+            "GroupID": "",
+            "InDoorID": "UNKNOWN_DOOR",
+            "OutDoorID": "2",
+            "Pid": "N000070_124045_cls_0",
+            "StartTime": "14:09:12",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "14:12:34",
+            "GroupID": "",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000003_080239",
+            "StartTime": "14:09:24",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "14:14:42",
+            "GroupID": "",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000003_080239",
+            "StartTime": "14:13:49",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "14:17:26",
+            "GroupID": "",
+            "InDoorID": "2",
+            "OutDoorID": "1",
+            "Pid": "N000003_080239",
+            "StartTime": "14:15:05",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "15:47:27",
+            "GroupID": "",
+            "InDoorID": "1",
+            "OutDoorID": "1",
+            "Pid": "mv_id_141839_000148_split_20220715065146_03_cls_0",
+            "StartTime": "14:18:44",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "14:27:26",
+            "GroupID": "",
+            "InDoorID": "2",
+            "OutDoorID": "1",
+            "Pid": "N000003_080239",
+            "StartTime": "14:23:13",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "15:13:28",
+            "GroupID": "",
+            "InDoorID": "2",
+            "OutDoorID": "UNKNOWN_DOOR",
+            "Pid": "N000070_124045_cls_0",
+            "StartTime": "14:26:56",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "14:30:57",
+            "GroupID": "",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000003_080239",
+            "StartTime": "14:29:15",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "14:48:53",
+            "GroupID": "LIXIANG_beijing_hj_20220715_69",
+            "InDoorID": "2",
+            "OutDoorID": "1",
+            "Pid": "mv_id_143048_000165",
+            "StartTime": "14:30:45",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "14:32:50",
+            "GroupID": "",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000003_080239",
+            "StartTime": "14:31:51",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "14:43:14",
+            "GroupID": "",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "mv_id_113447_000046",
+            "StartTime": "14:40:10",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "15:16:22",
+            "GroupID": "",
+            "InDoorID": "2",
+            "OutDoorID": "UNKNOWN_DOOR",
+            "Pid": "mv_id_201106_000510_cls_0",
+            "StartTime": "14:49:22",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "16:00:49",
+            "GroupID": "",
+            "InDoorID": "2",
+            "OutDoorID": "1",
+            "Pid": "mv_id_141839_000148_split_20220715065146_03_cls_1",
+            "StartTime": "14:50:17",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "14:51:41",
+            "GroupID": "LIXIANG_beijing_hj_20220715_73",
+            "InDoorID": "2",
+            "OutDoorID": "UNKNOWN_DOOR",
+            "Pid": "N000139_145100",
+            "StartTime": "14:51:10",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "15:47:29",
+            "GroupID": "",
+            "InDoorID": "1",
+            "OutDoorID": "1",
+            "Pid": "mv_id_102614_000018",
+            "StartTime": "14:59:44",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": ""
+          }
+        ]
+      },
+      "labels": {
+        "ROOM_INOUT": [
+          {
+            "EndTime": "14:17:20",
+            "Pid": "N000110_140840",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:09:07",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:17:25",
+            "Pid": "N000109_140840",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:12:48",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:22:29",
+            "Pid": "N000119_142035",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:20:52",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:23:50",
+            "Pid": "N000110_140840",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:21:30",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:22:58",
+            "Pid": "N000114_142012",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:21:39",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:25:05",
+            "Pid": "N000114_142012",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:23:35",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:25:04",
+            "Pid": "N000116_142020",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:24:11",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:53:51",
+            "Pid": "N000128_143048",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:31:38",
+            "Type": "ROOM_INOUT",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FN"
+          },
+          {
+            "EndTime": "14:36:19",
+            "Pid": "N000129_143048",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:32:54",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:36:25",
+            "Pid": "N000127_143046",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:33:30",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:37:55",
+            "Pid": "N000129_143048",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:36:46",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:39:05",
+            "Pid": "N000129_143048",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:38:14",
+            "Type": "ROOM_INOUT",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FN"
+          },
+          {
+            "EndTime": "14:41:54",
+            "Pid": "N000130_143900",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:39:45",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:40:59",
+            "Pid": "N000129_143048",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:39:45",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:41:52",
+            "Pid": "N000131_143900",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:39:49",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:42:38",
+            "Pid": "N000129_143048",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:41:37",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:44:09",
+            "Pid": "N000127_143046",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:41:55",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:43:31",
+            "Pid": "N000125_143023",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:42:20",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:44:59",
+            "Pid": "N000129_143048",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:44:14",
+            "Type": "ROOM_INOUT",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FN"
+          },
+          {
+            "EndTime": "14:57:52",
+            "Pid": "N000133_144505",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:46:47",
+            "Type": "ROOM_INOUT",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FPFN"
+          },
+          {
+            "EndTime": "14:55:27",
+            "Pid": "mv_id_145206_000191",
+            "RegionID": 2,
+            "RegionType": "CAR",
+            "StartTime": "14:53:48",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:01:17",
+            "Pid": "mv_id_144948_000189",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:53:53",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:55:49",
+            "Pid": "N000135_144808",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:53:58",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:02:45",
+            "Pid": "mv_id_144952_000190",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:54:51",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:00:08",
+            "Pid": "N000141_145459",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:58:54",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:00:18",
+            "Pid": "N000142_145501",
+            "RegionID": 1,
+            "RegionType": "CAR",
+            "StartTime": "14:59:26",
+            "Type": "ROOM_INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          }
+        ],
+        "STORE_INOUT": [
+          {
+            "EndTime": "14:28:16",
+            "GroupID": "LIXIANG_beijing_hj_20220715_61",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "mv_id_140037_000126",
+            "StartTime": "14:00:34",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:28:21",
+            "GroupID": "LIXIANG_beijing_hj_20220715_61",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "mv_id_140046_000128",
+            "StartTime": "14:00:43",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:24:13",
+            "GroupID": "LIXIANG_beijing_hj_20220715_62",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000109_140840",
+            "StartTime": "14:08:50",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:24:12",
+            "GroupID": "LIXIANG_beijing_hj_20220715_62",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000110_140840",
+            "StartTime": "14:08:54",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:28:15",
+            "GroupID": "LIXIANG_beijing_hj_20220715_61",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "mv_id_140057_000129_cls_0",
+            "StartTime": "14:00:54",
+            "Type": "INOUT",
+            "issue_category": "object occlusion",
+            "issue_details": "\u7269\u4f53\u906e\u6321\uff08\u53ef\u79fb\u52a8\uff09",
+            "record": "FPFN"
+          },
+          {
+            "EndTime": "14:28:19",
+            "GroupID": "LIXIANG_beijing_hj_20220715_61",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "mv_id_140129_000131",
+            "StartTime": "14:00:59",
+            "Type": "INOUT",
+            "issue_category": "object occlusion",
+            "issue_details": "\u7269\u4f53\u906e\u6321\uff08\u53ef\u79fb\u52a8\uff09",
+            "record": "FPFN"
+          },
+          {
+            "EndTime": "14:17:24",
+            "GroupID": "LIXIANG_beijing_hj_20220715_63",
+            "InDoorID": "2",
+            "OutDoorID": "1",
+            "Pid": "N000111_141421",
+            "StartTime": "14:14:28",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:22:45",
+            "GroupID": "LIXIANG_beijing_hj_20220715_64",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000112_141740",
+            "StartTime": "14:17:50",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:26:05",
+            "GroupID": "LIXIANG_beijing_hj_20220715_65",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000113_142000",
+            "StartTime": "14:20:17",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:26:08",
+            "GroupID": "LIXIANG_beijing_hj_20220715_65",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000114_142012",
+            "StartTime": "14:20:18",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:26:07",
+            "GroupID": "LIXIANG_beijing_hj_20220715_65",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000115_142021",
+            "StartTime": "14:20:28",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:26:10",
+            "GroupID": "LIXIANG_beijing_hj_20220715_65",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000116_142020",
+            "StartTime": "14:20:30",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:22:53",
+            "GroupID": "LIXIANG_beijing_hj_20220715_66",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000117_142033",
+            "StartTime": "14:20:37",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:22:51",
+            "GroupID": "LIXIANG_beijing_hj_20220715_66",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000119_142035",
+            "StartTime": "14:20:44",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:48:30",
+            "GroupID": "LIXIANG_beijing_hj_20220715_68",
+            "InDoorID": "1",
+            "OutDoorID": "2",
+            "Pid": "N000123_143001",
+            "StartTime": "14:30:08",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:12:45",
+            "GroupID": "LIXIANG_beijing_hj_20220715_68",
+            "InDoorID": "1",
+            "OutDoorID": "1",
+            "Pid": "N000124_143002",
+            "StartTime": "14:30:11",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:49:22",
+            "GroupID": "LIXIANG_beijing_hj_20220715_69",
+            "InDoorID": "2",
+            "OutDoorID": "1",
+            "Pid": "N000125_143023",
+            "StartTime": "14:30:31",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:48:55",
+            "GroupID": "LIXIANG_beijing_hj_20220715_69",
+            "InDoorID": "2",
+            "OutDoorID": "1",
+            "Pid": "N000127_143046",
+            "StartTime": "14:30:47",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:12:28",
+            "GroupID": "LIXIANG_beijing_hj_20220715_68",
+            "InDoorID": "1",
+            "OutDoorID": "1",
+            "Pid": "N000128_143048",
+            "StartTime": "14:30:49",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:48:53",
+            "GroupID": "LIXIANG_beijing_hj_20220715_69",
+            "InDoorID": "2",
+            "OutDoorID": "1",
+            "Pid": "N000129_143048",
+            "StartTime": "14:30:57",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:43:18",
+            "GroupID": "LIXIANG_beijing_hj_20220715_70",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000131_143900",
+            "StartTime": "14:39:16",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:43:19",
+            "GroupID": "LIXIANG_beijing_hj_20220715_70",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000130_143900",
+            "StartTime": "14:39:17",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:05:20",
+            "GroupID": "LIXIANG_beijing_hj_20220715_71",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000133_144505",
+            "StartTime": "14:45:11",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:05:23",
+            "GroupID": "LIXIANG_beijing_hj_20220715_71",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000134_144508",
+            "StartTime": "14:45:14",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:56:14",
+            "GroupID": "LIXIANG_beijing_hj_20220715_72",
+            "InDoorID": "2",
+            "OutDoorID": "UNKNOWN_DOOR",
+            "Pid": "N000135_144808",
+            "StartTime": "14:48:19",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:56:16",
+            "GroupID": "LIXIANG_beijing_hj_20220715_72",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000136_144818",
+            "StartTime": "14:48:24",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:03:36",
+            "GroupID": "LIXIANG_beijing_hj_20220715_71",
+            "InDoorID": "UNKNOWN_DOOR",
+            "OutDoorID": "2",
+            "Pid": "mv_id_144948_000189",
+            "StartTime": "14:49:45",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:03:38",
+            "GroupID": "LIXIANG_beijing_hj_20220715_71",
+            "InDoorID": "UNKNOWN_DOOR",
+            "OutDoorID": "2",
+            "Pid": "mv_id_144952_000190",
+            "StartTime": "14:49:49",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:52:45",
+            "GroupID": "LIXIANG_beijing_hj_20220715_73",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000137_145054",
+            "StartTime": "14:51:01",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:52:41",
+            "GroupID": "LIXIANG_beijing_hj_20220715_73",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000138_145057",
+            "StartTime": "14:51:06",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:55:44",
+            "GroupID": "LIXIANG_beijing_hj_20220715_74",
+            "InDoorID": "2",
+            "OutDoorID": "1",
+            "Pid": "mv_id_145206_000191",
+            "StartTime": "14:52:03",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:55:43",
+            "GroupID": "LIXIANG_beijing_hj_20220715_74",
+            "InDoorID": "2",
+            "OutDoorID": "1",
+            "Pid": "mv_id_145208_000192",
+            "StartTime": "14:52:05",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:12:44",
+            "GroupID": "LIXIANG_beijing_hj_20220715_68",
+            "InDoorID": "2",
+            "OutDoorID": "1",
+            "Pid": "mv_id_145521_000199",
+            "StartTime": "14:55:06",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:58:32",
+            "GroupID": "LIXIANG_beijing_hj_20220715_76",
+            "InDoorID": "2",
+            "OutDoorID": "1",
+            "Pid": "N000141_145459",
+            "StartTime": "14:55:09",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:58:22",
+            "GroupID": "LIXIANG_beijing_hj_20220715_76",
+            "InDoorID": "2",
+            "OutDoorID": "1",
+            "Pid": "N000142_145501",
+            "StartTime": "14:55:15",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "14:57:36",
+            "GroupID": "",
+            "InDoorID": "1",
+            "OutDoorID": "1",
+            "Pid": "mv_id_145615_000201",
+            "StartTime": "14:56:18",
+            "Type": "INOUT",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:05:12",
+            "GroupID": "LIXIANG_beijing_hj_20220715_68",
+            "InDoorID": "2",
+            "OutDoorID": "2",
+            "Pid": "N000123_143001",
+            "StartTime": "14:48:54",
+            "Type": "INOUT",
+            "issue_category": "track problem",
+            "issue_details": "\u89c6\u91ce\u6e05\u6670\u8f68\u8ff9\u4e0d\u5b8c\u6574",
+            "record": "FPFN"
+          }
+        ]
+      },
+      "start_time": "14:00:00",
+      "verification_sampling_method": {
+        "CAR_INOUT": {
+          "sampling": "select_time",
+          "sampling_range": [
+            "14:00:00",
+            "15:00:00"
+          ]
+        },
+        "CAR_VISIT": {
+          "sampling": "select_time",
+          "sampling_range": [
+            "14:00:00",
+            "14:30:00"
+          ]
+        },
+        "INDIVIDUAL_RECEPTION": {
+          "sampling": "select_time",
+          "sampling_range": [
+            "15:00:00",
+            "15:30:00"
+          ]
+        },
+        "STORE_INOUT": {
+          "sampling": "select_time",
+          "sampling_range": [
+            "14:00:00",
+            "15:00:00"
+          ]
+        }
+      }
+    },
+    {
+      "date": "20220715",
+      "end_time": "15:30:00",
+      "ignore_events": {
+        "INDIVIDUAL_RECEPTION": [
+          {
+            "EndTime": "15:03:28",
+            "Pid": "N000134_144508",
+            "StaffID": "mv_id_201106_000510_cls_0",
+            "StartTime": "14:49:28",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "15:03:28",
+            "Pid": "mv_id_144948_000189",
+            "StaffID": "N000097_133915_cls_0",
+            "StartTime": "14:53:53",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "15:03:27",
+            "Pid": "mv_id_144952_000190",
+            "StaffID": "N000097_133915_cls_0",
+            "StartTime": "14:54:51",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "15:04:55",
+            "Pid": "N000128_143048",
+            "StaffID": "N000070_124045_cls_0",
+            "StartTime": "14:59:05",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "",
+            "issue_details": ""
+          },
+          {
+            "EndTime": "15:00:23",
+            "Pid": "N000124_143002",
+            "StaffID": "N000070_124045_cls_0",
+            "StartTime": "15:00:03",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898"
+          },
+          {
+            "EndTime": "15:23:57",
+            "Pid": "N000163_152110",
+            "StaffID": "N000070_124045_cls_0",
+            "StartTime": "15:23:35",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898"
+          }
+        ]
+      },
+      "labels": {
+        "INDIVIDUAL_RECEPTION": [
+          {
+            "EndTime": "15:01:36",
+            "Pid": "mv_id_145521_000199",
+            "StaffID": "N000097_133915_cls_0",
+            "StartTime": "15:00:05",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:01:30",
+            "Pid": "N000133_144505",
+            "StaffID": "mv_id_141839_000148_split_20220715065146_03_cls_0",
+            "StartTime": "14:45:17",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FN"
+          },
+          {
+            "EndTime": "15:09:47",
+            "Pid": "N000142_145501",
+            "StaffID": "N000070_124045_cls_0",
+            "StartTime": "15:01:03",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FPFN"
+          },
+          {
+            "EndTime": "15:09:47",
+            "Pid": "N000141_145459",
+            "StaffID": "mv_id_141839_000148_split_20220715065146_03_cls_1",
+            "StartTime": "15:01:04",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FPFN"
+          },
+          {
+            "EndTime": "15:12:06",
+            "Pid": "N000124_143002",
+            "StaffID": "N000070_124045_cls_0",
+            "StartTime": "15:05:10",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FPFN"
+          },
+          {
+            "EndTime": "15:15:23",
+            "Pid": "mv_id_150308_000208",
+            "StaffID": "mv_id_141839_000148_split_20220715065146_03_cls_0",
+            "StartTime": "15:04:47",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FPFN"
+          },
+          {
+            "EndTime": "15:08:33",
+            "Pid": "mv_id_145521_000199",
+            "StaffID": "N000097_133915_cls_0",
+            "StartTime": "15:05:15",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FPFN"
+          },
+          {
+            "EndTime": "15:12:16",
+            "Pid": "mv_id_145521_000199",
+            "StaffID": "N000097_133915_cls_0",
+            "StartTime": "15:10:14",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FPFN"
+          },
+          {
+            "EndTime": "15:12:13",
+            "Pid": "N000128_143048",
+            "StaffID": "N000070_124045_cls_0",
+            "StartTime": "15:01:38",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FN"
+          },
+          {
+            "EndTime": "15:16:00",
+            "Pid": "N000153_151103",
+            "StaffID": "mv_id_201106_000510_cls_0",
+            "StartTime": "15:14:26",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FPFN"
+          },
+          {
+            "EndTime": "15:15:37",
+            "Pid": "N000147_150805",
+            "StaffID": "tpid_N000070_124045_split_20220715070807_02",
+            "StartTime": "15:14:06",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FPFN"
+          },
+          {
+            "EndTime": "15:23:08",
+            "Pid": "mv_id_151125_000230",
+            "StaffID": "mv_id_141839_000148_split_20220715065146_03_cls_1",
+            "StartTime": "15:12:33",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:16:09",
+            "Pid": "mv_id_150747_000222",
+            "StaffID": "mv_id_141839_000148_split_20220715065146_03_cls_1",
+            "StartTime": "15:12:35",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:15:29",
+            "Pid": "mv_id_150312_000207",
+            "StaffID": "mv_id_201106_000510_cls_0",
+            "StartTime": "15:13:40",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FN"
+          },
+          {
+            "EndTime": "15:14:34",
+            "Pid": "N000155_151128",
+            "StaffID": "mv_id_141839_000148_split_20220715065146_03_cls_1",
+            "StartTime": "15:12:45",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FN"
+          },
+          {
+            "EndTime": "15:19:09",
+            "Pid": "N000155_151128",
+            "StaffID": "mv_id_141839_000148_split_20220715065146_03_cls_1",
+            "StartTime": "15:17:28",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:23:10",
+            "Pid": "N000154_151122",
+            "StaffID": "mv_id_141839_000148_split_20220715065146_03_cls_1",
+            "StartTime": "15:18:16",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FPFN"
+          },
+          {
+            "EndTime": "15:16:36",
+            "Pid": "N000154_151122",
+            "StaffID": "mv_id_141839_000148_split_20220715065146_03_cls_1",
+            "StartTime": "15:13:52",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FN"
+          },
+          {
+            "EndTime": "15:58:22",
+            "Pid": "N000142_145501",
+            "StaffID": "N000070_124045_cls_0",
+            "StartTime": "15:23:08",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FPFN"
+          },
+          {
+            "EndTime": "15:29:08",
+            "Pid": "N000153_151103",
+            "StaffID": "mv_id_201106_000510_cls_0",
+            "StartTime": "15:24:39",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:58:32",
+            "Pid": "N000141_145459",
+            "StaffID": "mv_id_141839_000148_split_20220715065146_03_cls_1",
+            "StartTime": "15:23:23",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FN"
+          },
+          {
+            "EndTime": "15:26:51",
+            "Pid": "mv_id_152503_000255",
+            "StaffID": "mv_id_113447_000046",
+            "StartTime": "15:25:28",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "",
+            "issue_details": "",
+            "record": "TP"
+          },
+          {
+            "EndTime": "15:47:37",
+            "Pid": "N000166_152422",
+            "StaffID": "tpid_N000070_124045_split_20220715070807_02",
+            "StartTime": "15:27:59",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FPFN"
+          },
+          {
+            "EndTime": "15:47:37",
+            "Pid": "N000167_152425",
+            "StaffID": "tpid_N000070_124045_split_20220715070807_02",
+            "StartTime": "15:27:59",
+            "Type": "INDIVIDUAL_RECEPTION",
+            "issue_category": "event problem",
+            "issue_details": "\u7b97\u6cd5\u95ee\u9898",
+            "record": "FN"
+          }
+        ]
+      },
+      "start_time": "15:00:00",
+      "verification_sampling_method": {
+        "CAR_INOUT": {
+          "sampling": "select_time",
+          "sampling_range": [
+            "14:00:00",
+            "15:00:00"
+          ]
+        },
+        "CAR_VISIT": {
+          "sampling": "select_time",
+          "sampling_range": [
+            "14:00:00",
+            "14:30:00"
+          ]
+        },
+        "INDIVIDUAL_RECEPTION": {
+          "sampling": "select_time",
+          "sampling_range": [
+            "15:00:00",
+            "15:30:00"
+          ]
+        },
+        "STORE_INOUT": {
+          "sampling": "select_time",
+          "sampling_range": [
+            "14:00:00",
+            "15:00:00"
+          ]
+        }
+      }
+    }
+  ]
+  
