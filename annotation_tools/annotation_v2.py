@@ -41,6 +41,7 @@ root = Path(img_list_path).parent
 # save_path = root / "label_result.json"
 save_path = root / f"label_result_{VERSION}_en.json"
 # save_path = root / f"train_label_result_v2_aug.json"
+save_path = root / "label_result_person_index.json"
 
 result = json.loads(open(img_list_path, 'r').read())
 if MANUAL_LABEL:
