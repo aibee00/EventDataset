@@ -16,7 +16,7 @@ VERSION="v2"
 label_path = "/training/wphu/Dataset/lavis/eventgpt/annotations/vqa_oracle_train.json"
 label_path = "/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/detections/detection_result.json"
 save_path = f"/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/train_img_list_{VERSION}.json"
-save_path = f"/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/train_img_list_{VERSION}.json"
+save_path = f"/training/wphu/Dataset/lavis/eventgpt/fewshot_data_eventgpt/images_expand/train_img_list_expand.json"
 
 
 if len(sys.argv) > 1:
@@ -38,7 +38,9 @@ class DataInfoGen():
         if image_path is None:
             root_path = Path(label_path).parent.parent / 'images'
             if not root_path.exists():
-                raise ValueError(f'root path {root_path} not exists')
+                root_path = Path(label_path).parent / 'images'
+                if not root_path.exists():
+                    raise ValueError(f'root path {root_path} not exists')
             self.image_path = root_path
         else:
             self.image_path = image_path
