@@ -15,75 +15,15 @@ from prompt_encoder import PromptEncoder
 
 from descrption_generator import ImageDescriptor, PromptDescriptor, PromptDescriptorV1, PromptDescriptorV2, PromptDescriptorV3
 from region_descriptor import AreaDescriptor
-from gen_grid_cameras_map import FastGridRegion, get_best_camera_views
+from gen_grid_cameras_map import FastGridRegion
 
 from get_events import EventInfoFactoryImpl, GTEventInfoFactoryImpl, EVENTS_TYPE
 import json
 
-from common import STORE_INOUT_NEAR_TIME, duration, hms2sec, merge_bboxes_at_one_channel, ts_to_string, get_location, get_overlap_time, get_pid_loc_time_range, logger
+from common import STORE_INOUT_NEAR_TIME, duration, hms2sec, merge_bboxes_at_one_channel, \
+    ts_to_string, get_location, get_overlap_time, get_pid_loc_time_range, logger, \
+    get_cover_channels, get_video_time_range
 
-
-# 给出pid、location和时间段，返回覆盖到该location的所有channels
-def get_cover_channels(grid_cameras_map, pid, loc, time_slice):
-    """ 获取在时间段time_slice内pid所在位置有覆盖的cameras
-
-    Args:
-        grid_cameras_map: 预先生成的grid to cameras的映射关系
-        pid: 某个人的pid
-        loc: 轨迹文件
-        time_slice: 可以是一段时间[st, et]或一个时刻ts
-    Returns:
-        channels: set of channels
-    """
-    channels = set()
-    if isinstance(time_slice, list):
-        for ts in range(time_slice[0], time_slice[1]):
-            if pid not in loc:
-                continue
-            if ts not in loc[pid]['loc']:
-                continue
-
-            location = loc[pid]['loc'][ts]
-            best_cameras = get_best_camera_views(location, grid_cameras_map)
-            channels.update(set(best_cameras))
-    else:
-        if pid not in loc:
-            return channels
-        if time_slice not in loc[pid]['loc']:
-            return channels
-
-        location = loc[pid]['loc'][time_slice]
-        best_cameras = get_best_camera_views(location, grid_cameras_map)
-        channels.update(set(best_cameras))
-    
-    return channels
-
-
-# 根据开始时间获取时间段
-def get_video_time_range(start_time, offset):
-    """
-    start_time: 开始时间
-    offset: 如[10, 20]
-    :return: tuple(int, int)
-    """
-    if isinstance(start_time, str):
-        start_time = hms2sec(int(start_time))
-    end_time = start_time + offset
-    return start_time, end_time
-
-
-# 定义get_overlap_time_range函数，输入两个时间段，返回overlap时间段
-def get_overlap_time_range(time_range1, time_range2):
-    """
-    time_range1: (start_time1, end_time1)
-    time_range2: (start_time2, end_time2)
-    """
-    if time_range1[0] >= time_range2[1] or time_range1[1] <= time_range2[0]:
-        return None
-    start_time = max(time_range1[0], time_range2[0])
-    end_time = min(time_range1[1], time_range2[1])
-    return start_time, end_time
-    
 
 class EventDataset(Dataset, metaclass=ABCMeta):
 
