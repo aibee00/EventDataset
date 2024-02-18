@@ -70,6 +70,7 @@ def plot_bboxes_on_image(image, bboxes, color=[0, 0, 255], linewidth=2):
     Plot bboxes on image
     """
     if isinstance(image, str):
+        assert Path(image).exists(), f"Image {image} not found"
         image = cv2.imread(image)
     
     for i, bbox in enumerate(bboxes):
