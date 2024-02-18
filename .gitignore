@@ -2,3 +2,4 @@ dataset/__pycache__/
 data
 dataset/pretrained_models
 tmp/
+__pycache__
