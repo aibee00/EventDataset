@@ -50,7 +50,7 @@ from vipy.activity import Activity
 
 
 class ConvertCapToLavis(object):
-    def __init__(self, cap_dir, lavis_dir):
+    def __init__(self, cap_dir, lavis_dir, max_clip_num=500, valid_activity_path=None):
         self.cap_dir = cap_dir
         self.annotation_dir = os.path.join(cap_dir, "annotations")
         self.video_dir = os.path.join(cap_dir, "videos")
@@ -66,9 +66,9 @@ class ConvertCapToLavis(object):
         self.val_labels = []
 
         self.sample_num_per_clip = 4  # 每个clip采样几张图片, 共145万个clips
-        self.max_clip_num = 500  # 每个动作采样几个clips
+        self.max_clip_num = max_clip_num  # 每个动作采样几个clips
 
-        self.valid_activity_names = self._load_valid_activity_names()
+        self.valid_activity_names = self._load_valid_activity_names(valid_activity_path)
 
     @property
     def train_video_names(self,):
@@ -86,10 +86,13 @@ class ConvertCapToLavis(object):
         """
         return [fp.stem for fp in Path(self.annotation_dir).glob('*.json')]
     
-    def _load_valid_activity_names(self,):
-        with open(Path(__file__).parent / 'valid_activities.txt', 'r') as f:
-            lines = f.readlines()
-            valid_activity_names = [line.strip() for line in lines]
+    def _load_valid_activity_names(self, valid_activity_path):
+        if valid_activity_path is not None and os.path.exists(valid_activity_path):
+            with open(valid_activity_path, 'r') as f:
+                lines = f.readlines()
+                valid_activity_names = [line.strip() for line in lines]
+        else:
+            valid_activity_names = os.listdir(self.video_dir)
         return valid_activity_names
     
     def get_name_from_path(self, video_path_name):
@@ -236,7 +239,13 @@ class ConvertCapToLavis(object):
 if __name__ == "__main__":
     cap_dir = '/training/wphu/Dataset/Cap/cap_classification_clip'
     lavis_dir = '/training/wphu/Dataset/lavis/from_cap/'
-    engine = ConvertCapToLavis(cap_dir, lavis_dir)
+    valid_activity_path = None  # "/ssd/wphu/chatglm/EventDataset/dataset/cap/valid_activities.txt"
+    engine = ConvertCapToLavis(
+        cap_dir, 
+        lavis_dir, 
+        max_clip_num=100000,  # 每种动作采样多少个clips, 超过这个值时截断
+        valid_activity_path=valid_activity_path,  # 设置为None时默认使用所有video
+    )
     engine.convert()
     print('Done')
     print(f'lavis_dir: {lavis_dir}')
