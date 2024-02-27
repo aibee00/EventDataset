@@ -101,7 +101,7 @@ class GenDenseCaptionForClips(object):
             raise ValueError(f"Model {model_name} is not registered.")
         
         dense_captions = self.load_result()
-        for activity_name in tqdm(os.listdir(self.image_dir)[:2], desc='[Iter activities]'):
+        for activity_name in tqdm(os.listdir(self.image_dir), desc='[Iter activities]'):
             activity_dir = os.path.join(self.image_dir, activity_name)
             image_paths = [os.path.join(activity_dir, image_name) for image_name in os.listdir(activity_dir)]
             
