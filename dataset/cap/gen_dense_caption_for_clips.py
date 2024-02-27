@@ -28,7 +28,7 @@ LLAVA_CHECKPOINT_PATH = "/training/wphu/Checkpoints/llava/llava-1.5-7b-hf"
 # 抽象类
 class VideoCaptionModel(ABC):
     @abstractmethod
-    def get_caption(self, video_path, activity_name, max_length=30):
+    def get_caption(self, video_path, activity_name, max_length=256):
         raise NotImplementedError
 
 
@@ -42,7 +42,7 @@ class LlavaModel(VideoCaptionModel):
     def update_prompt(self, activity_name):
         self.prompt = f"<image>\nUSER: What's the content of the image? Note: The clue is that this is a frame taken from a video clip with the activity '{activity_name.replace('_',' ')}'\nASSISTANT:"
 
-    def get_caption(self, img_path, activity_name, max_length=30):
+    def get_caption(self, img_path, activity_name, max_length=256):
         self.update_prompt(activity_name)
         image = Image.open(img_path)  
         inputs = self.processor(text=self.prompt, images=image, return_tensors="pt")
