@@ -35,6 +35,7 @@ class VideoCaptionModel(ABC):
 class LlavaModel(VideoCaptionModel):
     def __init__(self):
         self.model = LlavaForConditionalGeneration.from_pretrained(LLAVA_CHECKPOINT_PATH)
+        self.model.to(device="cuda")
         self.model.eval()
         self.processor = AutoProcessor.from_pretrained(LLAVA_CHECKPOINT_PATH)
         self.prompt = "<image>\nUSER: What's the content of the image?\nASSISTANT:"
