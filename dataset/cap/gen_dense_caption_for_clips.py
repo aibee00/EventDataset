@@ -67,7 +67,7 @@ class GenDenseCaptionForClips(object):
 
         self.image_caption_models = {}  # registry of caption models
 
-        self.save_interval = 10  # 每隔10个图片保存一次
+        self.save_interval = 50  # 每隔10个图片保存一次
 
 
     def register_model(self, model_name, model):
@@ -97,6 +97,8 @@ class GenDenseCaptionForClips(object):
             for image_name in tqdm(os.listdir(activity_dir), desc='[Iter images]'):
                 image_path = os.path.join(activity_dir, image_name)
                 dense_caption = mm_model.get_caption(image_path, activity_name)
+                if image_name in dense_captions:
+                    continue
                 dense_captions[image_name] = dense_caption
                 print(f"Generate dense caption for {image_name}: {dense_caption}")
         
