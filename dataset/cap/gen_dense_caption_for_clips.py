@@ -28,7 +28,7 @@ LLAVA_CHECKPOINT_PATH = "/training/wphu/Checkpoints/llava/llava-1.5-7b-hf"
 # 抽象类
 class VideoCaptionModel(ABC):
     @abstractmethod
-    def get_caption(self, video_path, activity_name, max_length=256):
+    def get_captions(self, video_path, activity_name, max_length=256):
         raise NotImplementedError
 
 
