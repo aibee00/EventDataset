@@ -34,10 +34,11 @@ class VideoCaptionModel(ABC):
 
 class LlavaModel(VideoCaptionModel):
     def __init__(self):
+        self.device = "cuda"
         self.model = LlavaForConditionalGeneration.from_pretrained(LLAVA_CHECKPOINT_PATH)
         # 将 model 量化
         self.model.half()
-        self.model.to(device="cuda")
+        self.model.to(self.device)
         self.model.eval()
         self.processor = AutoProcessor.from_pretrained(LLAVA_CHECKPOINT_PATH)
         self.prompt = "<image>\nUSER: What's the content of the image?\nASSISTANT:"
@@ -48,7 +49,7 @@ class LlavaModel(VideoCaptionModel):
     def get_caption(self, img_path, activity_name, max_length=256):
         self.update_prompt(activity_name)
         image = Image.open(img_path)  
-        inputs = self.processor(text=self.prompt, images=image, return_tensors="pt")
+        inputs = self.processor(text=self.prompt, images=image, return_tensors="pt").to(self.device)
         generate_ids = self.model.generate(**inputs, max_length=max_length)
         output = self.processor.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
         return output
