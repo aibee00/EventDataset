@@ -35,6 +35,8 @@ class VideoCaptionModel(ABC):
 class LlavaModel(VideoCaptionModel):
     def __init__(self):
         self.model = LlavaForConditionalGeneration.from_pretrained(LLAVA_CHECKPOINT_PATH)
+        # 将 model 量化
+        self.model.half()
         self.model.to(device="cuda")
         self.model.eval()
         self.processor = AutoProcessor.from_pretrained(LLAVA_CHECKPOINT_PATH)
