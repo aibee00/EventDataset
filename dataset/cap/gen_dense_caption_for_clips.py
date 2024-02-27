@@ -70,7 +70,7 @@ class GenDenseCaptionForClips(object):
         self.annotation_dir = os.path.join(cap_dir, "annotations")
         self.image_dir = os.path.join(cap_dir, "images")
 
-        self.dense_caption_dir = Path(self.annotation_dir)
+        self.dense_caption_dir = Path(self.annotation_dir) / "dense_captions"
         self.dense_caption_dir.mkdir(parents=True, exist_ok=True)
         self.dense_caption_file = os.path.join(self.dense_caption_dir, "dense_captions_of_cap.json")
 
@@ -81,6 +81,10 @@ class GenDenseCaptionForClips(object):
 
     def register_model(self, model_name, model):
         self.image_caption_models[model_name] = model
+
+    def update_dense_caption_file(self, activity_name):
+        file_name = self.dense_caption_file.split('/')[-1]
+        self.dense_caption_file = os.path.join(self.dense_caption_dir, activity_name, file_name)
 
     def save_result(self, dense_captions):
         with open(self.dense_caption_file, "w", encoding='utf-8') as f:
@@ -100,8 +104,11 @@ class GenDenseCaptionForClips(object):
         if mm_model is None:
             raise ValueError(f"Model {model_name} is not registered.")
         
-        dense_captions = self.load_result()
         for activity_name in tqdm(os.listdir(self.image_dir), desc='[Iter activities]'):
+            self.update_dense_caption_file(activity_name)  # update dense_caption_file path
+
+            dense_captions = self.load_result()
+
             activity_dir = os.path.join(self.image_dir, activity_name)
             image_paths = [os.path.join(activity_dir, image_name) for image_name in os.listdir(activity_dir)]
             
