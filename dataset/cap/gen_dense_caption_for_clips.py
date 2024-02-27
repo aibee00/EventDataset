@@ -67,7 +67,7 @@ class GenDenseCaptionForClips(object):
 
         self.image_caption_models = {}  # registry of caption models
 
-        self.save_interval = 50  # 每隔10个图片保存一次
+        self.save_interval = 20  # 每隔10个图片保存一次
 
 
     def register_model(self, model_name, model):
