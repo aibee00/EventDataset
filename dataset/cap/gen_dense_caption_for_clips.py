@@ -47,13 +47,19 @@ class LlavaModel(VideoCaptionModel):
     def update_prompt(self, activity_name):
         self.prompt = f"<image>\nUSER: What's the content of the image? Note: The activity is '{activity_name.replace('_',' ')}, Please Describe the actions in the figure in more detail based on the given action phrase, focusing on fine-grained action details'\nASSISTANT:"
 
-    def get_caption(self, img_path, activity_name, max_length=256):
+    def get_captions(self, img_paths, activity_name, max_length=256):
+        captions = []
         self.update_prompt(activity_name)
-        image = Image.open(img_path)  
-        inputs = self.processor(text=self.prompt, images=image, return_tensors="pt").to(self.device)
-        generate_ids = self.model.generate(**inputs, max_length=max_length)
-        output = self.processor.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
-        return output
+        
+        # 批量加载图像
+        images = [Image.open(img_path).convert("RGB") for img_path in img_paths]
+        inputs = self.processor(text=[self.prompt]*len(img_paths), images=images, return_tensors="pt", padding=True).to(self.device)
+        
+        # 生成描述
+        generate_ids = self.model.module.generate(**inputs, max_length=max_length)
+        outputs = self.processor.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
+        
+        return outputs
 
 
 class GenDenseCaptionForClips(object):
@@ -87,7 +93,7 @@ class GenDenseCaptionForClips(object):
             return dense_captions
         return {}
 
-    def gen_dense_caption(self, model_name="llava"):
+    def gen_dense_caption(self, model_name="llava", batch_size=8):
         mm_model = self.image_caption_models.get(model_name, None)
         if mm_model is None:
             raise ValueError(f"Model {model_name} is not registered.")
@@ -95,16 +101,26 @@ class GenDenseCaptionForClips(object):
         dense_captions = self.load_result()
         for activity_name in tqdm(os.listdir(self.image_dir)[:2], desc='[Iter activities]'):
             activity_dir = os.path.join(self.image_dir, activity_name)
-            for image_name in tqdm(os.listdir(activity_dir), desc='[Iter images]'):
-                if image_name in dense_captions:
-                    print(f"Skipping, dense caption for {image_name} already exists.")
+            image_paths = [os.path.join(activity_dir, image_name) for image_name in os.listdir(activity_dir)]
+            
+            # 使用批处理
+            for i in tqdm(range(0, len(image_paths), batch_size), desc='[Batch processing]'):
+                batch_image_paths = image_paths[i:i+batch_size]
+                batch_image_names = [path.split('/')[-1] for path in batch_image_paths]
+                
+                # 检查是否已存在描述
+                if all(image_name in dense_captions for image_name in batch_image_names):
+                    print(f"Skipping, dense captions for batch starting with {batch_image_names[0]} already exist.")
                     continue
-
-                image_path = os.path.join(activity_dir, image_name)
-                dense_caption = mm_model.get_caption(image_path, activity_name)
-                dense_captions[image_name] = dense_caption
-                print(f"Generate dense caption for {image_name}: {dense_caption}")
-        
+                
+                # 获取批量描述
+                batch_captions = mm_model.get_captions(batch_image_paths, activity_name)
+                
+                # 更新描述字典
+                for image_name, caption in zip(batch_image_names, batch_captions):
+                    dense_captions[image_name] = caption
+                    print(f"Generate dense caption for {image_name}: {caption}")
+                
                 # 及时保存
                 if len(dense_captions) % self.save_interval == 0:
                     self.save_result(dense_captions)
@@ -125,7 +141,7 @@ if __name__ == "__main__":
     engine = GenDenseCaptionForClips(
         args.cap_dir
     )
-    engine.register_model("llava", llava_model)
-    engine.gen_dense_caption()
+    engine.register_model(model_name="llava", model=llava_model)
+    engine.gen_dense_caption(batch_size=8, model_name="llava")
     print('Done')
 
