@@ -85,6 +85,7 @@ class GenDenseCaptionForClips(object):
     def update_dense_caption_file(self, activity_name):
         file_name = self.dense_caption_file.split('/')[-1]
         self.dense_caption_file = os.path.join(self.dense_caption_dir, activity_name, file_name)
+        Path(self.dense_caption_file).parent.mkdir(parents=True, exist_ok=True)
 
     def save_result(self, dense_captions):
         with open(self.dense_caption_file, "w", encoding='utf-8') as f:
