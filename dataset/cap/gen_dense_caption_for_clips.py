@@ -67,6 +67,8 @@ class GenDenseCaptionForClips(object):
 
         self.image_caption_models = {}  # registry of caption models
 
+        self.save_interval = 10  # 每隔10个图片保存一次
+
 
     def register_model(self, model_name, model):
         self.image_caption_models[model_name] = model
@@ -76,12 +78,20 @@ class GenDenseCaptionForClips(object):
             json.dump(dense_captions, f, indent=4, ensure_ascii=False)
         print(f"Save dense captions to {self.dense_caption_file}")
 
+    def load_result(self):
+        if os.path.exists(self.dense_caption_file):
+            with open(self.dense_caption_file, "r", encoding='utf-8') as f:
+                dense_captions = json.load(f)
+            print(f"Load dense captions from {self.dense_caption_file}")
+            return dense_captions
+        return {}
+
     def gen_dense_caption(self, model_name="llava"):
         mm_model = self.image_caption_models.get(model_name, None)
         if mm_model is None:
             raise ValueError(f"Model {model_name} is not registered.")
         
-        dense_captions = {}
+        dense_captions = self.load_result()
         for activity_name in tqdm(os.listdir(self.image_dir)[:2], desc='[Iter activities]'):
             activity_dir = os.path.join(self.image_dir, activity_name)
             for image_name in tqdm(os.listdir(activity_dir), desc='[Iter images]'):
@@ -90,7 +100,11 @@ class GenDenseCaptionForClips(object):
                 dense_captions[image_name] = dense_caption
                 print(f"Generate dense caption for {image_name}: {dense_caption}")
         
-        self.save_result(dense_captions)
+                # 及时保存
+                if len(dense_captions) % self.save_interval == 0:
+                    self.save_result(dense_captions)
+
+        self.save_result(dense_captions)  # save the last batch
         print(f"Generate dense captions for {len(dense_captions)} images.")
         return dense_captions
         
