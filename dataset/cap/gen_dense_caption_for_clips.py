@@ -28,7 +28,7 @@ LLAVA_CHECKPOINT_PATH = "/training/wphu/Checkpoints/llava/llava-1.5-7b-hf"
 # 抽象类
 class VideoCaptionModel(ABC):
     @abstractmethod
-    def get_caption(self, video_path, max_length=30):
+    def get_caption(self, video_path, activity_name, max_length=30):
         raise NotImplementedError
 
 
@@ -40,7 +40,7 @@ class LlavaModel(VideoCaptionModel):
         self.prompt = "<image>\nUSER: What's the content of the image?\nASSISTANT:"
 
     def update_prompt(self, activity_name):
-        self.prompt = f"<image>\nUSER: What's the content of the image? Note: The clue is that this is a frame taken from a video clip with the activity {activity_name}\nASSISTANT:"
+        self.prompt = f"<image>\nUSER: What's the content of the image? Note: The clue is that this is a frame taken from a video clip with the activity '{activity_name.replace('_',' ')}'\nASSISTANT:"
 
     def get_caption(self, img_path, activity_name, max_length=30):
         self.update_prompt(activity_name)
@@ -82,7 +82,7 @@ class GenDenseCaptionForClips(object):
             activity_dir = os.path.join(self.image_dir, activity_name)
             for image_name in os.listdir(activity_dir):
                 image_path = os.path.join(activity_dir, image_name)
-                dense_caption = mm_model.get_caption(image_path)
+                dense_caption = mm_model.get_caption(image_path, activity_name)
                 dense_captions[image_name] = dense_caption
                 print(f"Generate dense caption for {image_name}: {dense_caption}")
         
