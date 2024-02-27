@@ -40,7 +40,7 @@ class LlavaModel(VideoCaptionModel):
         self.prompt = "<image>\nUSER: What's the content of the image?\nASSISTANT:"
 
     def update_prompt(self, activity_name):
-        self.prompt = f"<image>\nUSER: What's the content of the image? Note: The clue is that this is a frame taken from a video clip with the activity '{activity_name.replace('_',' ')}'\nASSISTANT:"
+        self.prompt = f"<image>\nUSER: What's the content of the image? Note: The activity is '{activity_name.replace('_',' ')}, Please Describe the actions in the figure in more detail based on the given action phrase, focusing on fine-grained action details'\nASSISTANT:"
 
     def get_caption(self, img_path, activity_name, max_length=256):
         self.update_prompt(activity_name)
