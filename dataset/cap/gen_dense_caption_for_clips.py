@@ -135,8 +135,8 @@ class GenDenseCaptionForClips(object):
                 if len(dense_captions) % self.save_interval == 0:
                     self.save_result(dense_captions)
 
-        self.save_result(dense_captions)  # save the last batch
-        print(f"Generate dense captions for {len(dense_captions)} images.")
+            self.save_result(dense_captions)  # save the last batch
+            print(f"Generate dense captions for {len(dense_captions)} images.")
         return dense_captions
         
 
