@@ -10,7 +10,7 @@ video_caption 模型：
 import os
 import json
 import argparse
-
+import torch
 
 from tqdm import tqdm
 from pathlib import Path
@@ -38,6 +38,7 @@ class LlavaModel(VideoCaptionModel):
         self.model = LlavaForConditionalGeneration.from_pretrained(LLAVA_CHECKPOINT_PATH)
         # 将 model 量化
         self.model.half()
+        self.model = torch.nn.DataParallel(self.model)
         self.model.to(self.device)
         self.model.eval()
         self.processor = AutoProcessor.from_pretrained(LLAVA_CHECKPOINT_PATH)
@@ -95,10 +96,12 @@ class GenDenseCaptionForClips(object):
         for activity_name in tqdm(os.listdir(self.image_dir)[:2], desc='[Iter activities]'):
             activity_dir = os.path.join(self.image_dir, activity_name)
             for image_name in tqdm(os.listdir(activity_dir), desc='[Iter images]'):
+                if image_name in dense_captions:
+                    print(f"Skipping, dense caption for {image_name} already exists.")
+                    continue
+
                 image_path = os.path.join(activity_dir, image_name)
                 dense_caption = mm_model.get_caption(image_path, activity_name)
-                if image_name in dense_captions:
-                    continue
                 dense_captions[image_name] = dense_caption
                 print(f"Generate dense caption for {image_name}: {dense_caption}")
         
