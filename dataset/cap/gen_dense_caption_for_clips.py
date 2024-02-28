@@ -36,24 +36,24 @@ class VideoCaptionModel(ABC):
 
 
 class LlavaModel(VideoCaptionModel):
-    # def __init__(self):
-    #     self.device = "cuda"
-    #     self.model = LlavaForConditionalGeneration.from_pretrained(LLAVA_CHECKPOINT_PATH)
-    #     # 将 model 量化
-    #     self.model.half()
-    #     self.model = torch.nn.DataParallel(self.model)
-    #     self.model.to(self.device)
-    #     self.model.eval()
-    #     self.processor = AutoProcessor.from_pretrained(LLAVA_CHECKPOINT_PATH)
-    #     self.prompt = "<image>\nUSER: What's the content of the image?\nASSISTANT:"
-    
     def __init__(self):
-        self.device = torch.device("cuda", args.local_rank)
-        self.model = LlavaForConditionalGeneration.from_pretrained(LLAVA_CHECKPOINT_PATH).half().to(self.device)
-        self.model = DDP(self.model, device_ids=[args.local_rank], output_device=args.local_rank)
+        self.device = "cuda"
+        self.model = LlavaForConditionalGeneration.from_pretrained(LLAVA_CHECKPOINT_PATH)
+        # 将 model 量化
+        self.model.half()
+        self.model = torch.nn.DataParallel(self.model)
+        self.model.to(self.device)
         self.model.eval()
         self.processor = AutoProcessor.from_pretrained(LLAVA_CHECKPOINT_PATH)
         self.prompt = "<image>\nUSER: What's the content of the image?\nASSISTANT:"
+    
+    # def __init__(self):
+    #     self.device = torch.device("cuda", args.local_rank)
+    #     self.model = LlavaForConditionalGeneration.from_pretrained(LLAVA_CHECKPOINT_PATH).half().to(self.device)
+    #     self.model = DDP(self.model, device_ids=[args.local_rank], output_device=args.local_rank)
+    #     self.model.eval()
+    #     self.processor = AutoProcessor.from_pretrained(LLAVA_CHECKPOINT_PATH)
+    #     self.prompt = "<image>\nUSER: What's the content of the image?\nASSISTANT:"
 
     def update_prompt(self, activity_name):
         self.prompt = f"<image>\nUSER: What's the content of the image? Note: The activity is '{activity_name.replace('_',' ')}, Please Describe the actions in the figure in more detail based on the given action phrase, focusing on fine-grained action details'\nASSISTANT:"
@@ -197,12 +197,12 @@ if __name__ == "__main__":
     parser.add_argument("--local-rank", type=int, default=0)
     args = parser.parse_args()
 
-    torch.cuda.set_device(args.local_rank)
-    dist.init_process_group(backend="nccl")
+    # torch.cuda.set_device(args.local_rank)
+    # dist.init_process_group(backend="nccl")
 
     # 检查可用GPU数量
-    if dist.get_rank() == 0:
-        print("Available GPU count:", torch.cuda.device_count())
+    # if dist.get_rank() == 0:
+    #     print("Available GPU count:", torch.cuda.device_count())
 
     llava_model = LlavaModel()
 
@@ -210,6 +210,6 @@ if __name__ == "__main__":
         args.cap_dir
     )
     engine.register_model(model_name="llava", model=llava_model)
-    engine.gen_dense_caption_dist(batch_size=8, model_name="llava")
+    engine.gen_dense_caption(batch_size=8, model_name="llava")
     print('Done')
 
