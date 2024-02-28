@@ -195,7 +195,7 @@ class GenDenseCaptionForClips(object):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--cap_dir", type=str, default="/training/wphu/Dataset/lavis/from_cap/")
-    parser.add_argument("--local_rank", type=int, default=0)
+    parser.add_argument("--local-rank", type=int, default=0)
     args = parser.parse_args()
 
     torch.cuda.set_device(args.local_rank)
