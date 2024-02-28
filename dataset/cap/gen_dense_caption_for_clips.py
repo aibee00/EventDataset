@@ -50,7 +50,7 @@ class LlavaModel(VideoCaptionModel):
     
     def __init__(self):
         self.device = torch.device("cuda", args.local_rank)
-        self.model = LlavaForConditionalGeneration.from_pretrained(LLAVA_CHECKPOINT_PATH).to(self.device)
+        self.model = LlavaForConditionalGeneration.from_pretrained(LLAVA_CHECKPOINT_PATH).to(self.device).half()
         self.model = DDP(self.model, device_ids=[args.local_rank], output_device=args.local_rank)
         self.model.eval()
         self.processor = AutoProcessor.from_pretrained(LLAVA_CHECKPOINT_PATH)
