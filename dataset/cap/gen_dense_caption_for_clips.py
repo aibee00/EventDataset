@@ -11,6 +11,7 @@ import os
 import json
 import argparse
 import torch
+import torch.distributed as dist
 
 from tqdm import tqdm
 from pathlib import Path
@@ -18,6 +19,7 @@ from pathlib import Path
 from PIL import Image
 import requests
 from transformers import AutoProcessor, LlavaForConditionalGeneration
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 from abc import ABC, abstractmethod
 
@@ -35,13 +37,21 @@ class VideoCaptionModel(ABC):
 
 
 class LlavaModel(VideoCaptionModel):
+    # def __init__(self):
+    #     self.device = "cuda"
+    #     self.model = LlavaForConditionalGeneration.from_pretrained(LLAVA_CHECKPOINT_PATH)
+    #     # 将 model 量化
+    #     self.model.half()
+    #     self.model = torch.nn.DataParallel(self.model)
+    #     self.model.to(self.device)
+    #     self.model.eval()
+    #     self.processor = AutoProcessor.from_pretrained(LLAVA_CHECKPOINT_PATH)
+    #     self.prompt = "<image>\nUSER: What's the content of the image?\nASSISTANT:"
+    
     def __init__(self):
-        self.device = "cuda"
-        self.model = LlavaForConditionalGeneration.from_pretrained(LLAVA_CHECKPOINT_PATH)
-        # 将 model 量化
-        self.model.half()
-        self.model = torch.nn.DataParallel(self.model)
-        self.model.to(self.device)
+        self.device = torch.device("cuda", args.local_rank)
+        self.model = LlavaForConditionalGeneration.from_pretrained(LLAVA_CHECKPOINT_PATH).to(self.device)
+        self.model = DDP(self.model, device_ids=[args.local_rank], output_device=args.local_rank)
         self.model.eval()
         self.processor = AutoProcessor.from_pretrained(LLAVA_CHECKPOINT_PATH)
         self.prompt = "<image>\nUSER: What's the content of the image?\nASSISTANT:"
@@ -138,13 +148,58 @@ class GenDenseCaptionForClips(object):
             self.save_result(dense_captions)  # save the last batch
             print(f"Generate dense captions for {len(dense_captions)} images.")
         return dense_captions
+
+
+    def gen_dense_caption_dist(self, model_name="llava", batch_size=8):
+        mm_model = self.image_caption_models.get(model_name, None)
+        if mm_model is None:
+            raise ValueError(f"Model {model_name} is not registered.")
+        
+        world_size = dist.get_world_size()
+        local_rank = dist.get_rank()
+
+        for activity_name in tqdm(os.listdir(self.image_dir), desc='[Iter activities]'):
+            if local_rank == 0:
+                self.update_dense_caption_file(activity_name)  # 只有rank 0进程执行文件更新
+
+            dense_captions = {}
+
+            activity_dir = os.path.join(self.image_dir, activity_name)
+            all_image_paths = [os.path.join(activity_dir, image_name) for image_name in os.listdir(activity_dir)]
+            
+            # 为每个进程分配唯一的图像子集
+            image_paths = all_image_paths[local_rank::world_size]
+            
+            for i in tqdm(range(0, len(image_paths), batch_size), desc=f'[Batch processing][Rank {local_rank}]'):
+                batch_image_paths = image_paths[i:i+batch_size]
+                batch_image_names = [path.split('/')[-1] for path in batch_image_paths]
+
+                if all(image_name in dense_captions for image_name in batch_image_names):
+                    continue
+
+                batch_captions = mm_model.get_captions(batch_image_paths, activity_name)
+
+                for image_name, caption in zip(batch_image_names, batch_captions):
+                    dense_captions[image_name] = caption
+
+                if len(dense_captions) % self.save_interval == 0 and local_rank == 0:
+                    self.save_result(dense_captions)
+
+            if local_rank == 0:
+                self.save_result(dense_captions)
+            print(f"[Rank {local_rank}] Generated dense captions for {len(dense_captions)} images.")
+
         
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--cap_dir", type=str, default="/training/wphu/Dataset/lavis/from_cap/")
+    parser.add_argument("--local_rank", type=int, default=0)
     args = parser.parse_args()
+
+    torch.cuda.set_device(args.local_rank)
+    dist.init_process_group(backend="nccl")
 
     llava_model = LlavaModel()
 
@@ -152,6 +207,6 @@ if __name__ == "__main__":
         args.cap_dir
     )
     engine.register_model(model_name="llava", model=llava_model)
-    engine.gen_dense_caption(batch_size=8, model_name="llava")
+    engine.gen_dense_caption_dist(batch_size=8, model_name="llava")
     print('Done')
 
