@@ -27,7 +27,8 @@ from abc import ABC, abstractmethod
 LLAVA_CHECKPOINT_PATH = "/training/wphu/Checkpoints/llava/llava-1.5-7b-hf"
 
 # 检查可用GPU数量
-print("Available GPU count:", torch.cuda.device_count())
+if dist.get_rank() == 0:
+    print("Available GPU count:", torch.cuda.device_count())
 
 # 抽象类
 class VideoCaptionModel(ABC):
