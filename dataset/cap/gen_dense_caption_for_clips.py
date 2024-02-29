@@ -12,6 +12,7 @@ import json
 import argparse
 import torch
 import torch.distributed as dist
+import random
 
 from tqdm import tqdm
 from pathlib import Path
@@ -114,7 +115,14 @@ class GenDenseCaptionForClips(object):
         if mm_model is None:
             raise ValueError(f"Model {model_name} is not registered.")
         
-        for activity_name in tqdm(os.listdir(self.image_dir), desc='[Iter activities]'):
+        # Random activities
+        activities = os.listdir(self.image_dir)
+        # random seeds
+        seed = random.randint(1, 10000)
+        random.seed(seed)
+        random.shuffle(activities)
+
+        for activity_name in tqdm(activities, desc='[Iter activities]'):
             self.update_dense_caption_file(activity_name)  # update dense_caption_file path
 
             dense_captions = self.load_result()
