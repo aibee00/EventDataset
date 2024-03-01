@@ -41,6 +41,7 @@ import os
 import json
 import argparse
 import logging
+import multiprocessing
 
 from tqdm import tqdm
 from pathlib import Path
@@ -49,8 +50,13 @@ import vipy
 from vipy.activity import Activity
 
 
+def worker_helper(args):
+    obj, activity_name, video_info = args
+    return obj._worker_process(activity_name, video_info)
+
+
 class ConvertCapToLavis(object):
-    def __init__(self, cap_dir, lavis_dir, max_clip_num=500, valid_activity_path=None):
+    def __init__(self, cap_dir, lavis_dir, max_clip_num=500, num_procs=16, valid_activity_path=None):
         self.cap_dir = cap_dir
         self.annotation_dir = os.path.join(cap_dir, "annotations")
         self.video_dir = os.path.join(cap_dir, "videos")
@@ -68,7 +74,11 @@ class ConvertCapToLavis(object):
         self.sample_num_per_clip = 4  # 每个clip采样几张图片, 共145万个clips
         self.max_clip_num = max_clip_num  # 每个动作采样几个clips
 
-        self.valid_activity_names = self._load_valid_activity_names(valid_activity_path)
+        self.valid_activity_names = get_activities_not_processed(
+            cap_dir, lavis_dir
+        ) #self._load_valid_activity_names(valid_activity_path)
+
+        self.num_procs = num_procs
 
     @property
     def train_video_names(self,):
@@ -164,8 +174,6 @@ class ConvertCapToLavis(object):
             if not bbox:
                 continue  # skip empty bbox. e.g. 'activity_1<bbox>[0.0, 0.0, 0.0, 0.0]'
 
-            img = vipy.image.Image(array=cur_frame.numpy(), colorspace='rgb')
-
             # 将 activity_name 作为每张图片的 caption.
             caption = f'{activity_name}<bbox>{bbox}'
 
@@ -175,6 +183,7 @@ class ConvertCapToLavis(object):
             image_name = f'{video_name}_frame_{i}.jpg'
             image_dir = image_path / image_name
             if not image_dir.exists():
+                img = vipy.image.Image(array=cur_frame.numpy(), colorspace='rgb')
                 img.savefig(image_dir)
 
             # update annotation to train set
@@ -189,6 +198,59 @@ class ConvertCapToLavis(object):
                 self.train_labels.append(annotation)
             else:
                 self.val_labels.append(annotation)
+
+    def _worker_process(self, activity_name, video_info):
+        """ Process a single video clip in a worker process.
+        
+        Args:
+            v: vipy.video.Scene[vipy.image.Scene[vipy.image.ImageDetection]]
+            activity_name: str
+
+        How to process?
+            1. 对每个clip抽取self.sample_num_per_clip 数量的图片
+            2. 获取到每张图片的 bbox 坐标
+            3. 将 activity_name 作为每张图片的 caption.
+            4. 生成lavis数据集格式的label
+        """
+        v, is_train = video_info
+        annotations = []
+
+        # process trainset
+        video_name = self.get_name_from_path(v.filename())
+
+        # 对每个clip抽取self.sample_num_per_clip 数量的图片
+        num_frames = len(v.framelist())  # 一个clip中包含多个bbox
+        interval = num_frames // self.sample_num_per_clip  # 每个clip采样几张图片
+        for i in range(0, num_frames, interval):
+            # 获取到每张图片的 bbox 坐标
+            cur_frame = v.frame(i)  # vipy.image.Scene
+            caption = cur_frame.category()
+            bbox = self.get_bbox(cur_frame)  # List[float]
+            if not bbox:
+                continue  # skip empty bbox. e.g. 'activity_1<bbox>[0.0, 0.0, 0.0, 0.0]'
+
+            # 将 activity_name 作为每张图片的 caption.
+            caption = f'{activity_name}<bbox>{bbox}'
+
+            # 保存
+            image_path = self.lavis_image_dir / activity_name
+            image_path.mkdir(parents=True, exist_ok=True)
+            image_name = f'{video_name}_frame_{i}.jpg'
+            image_dir = image_path / image_name
+            if not image_dir.exists():
+                img = vipy.image.Image(array=cur_frame.numpy(), colorspace='rgb')
+                img.savefig(image_dir)
+
+            # update annotation to train set
+            image_id = len(self.train_labels) if is_train else len(self.val_labels)
+            annotation = {
+                "image": f"{activity_name}/{image_name}",
+                "image_id": image_id,
+                "bbox": bbox,
+                "dense_caption": caption,  # e.g. 'activity_1<bbox>[0.0, 0.0, 0.0, 0.0]'
+            }
+            annotations.append(annotation)
+        return (is_train, annotations)
 
     def update_label_file(self, istrain=True):
         """ Save labels """
@@ -233,7 +295,60 @@ class ConvertCapToLavis(object):
                     self._process(v, activity_name, istrain=False)
                     # update label file
                     self.update_label_file(istrain=False)
+    
+    def convert_multiprocess(self):
+        """ Convert cap to lavis format.
+
+        如何用cap数据生成基于图片的lavis格式的数据集?
+        1. 所有的动作都要有
+        2. 每个动作需要采样出一定数量的图片作为训练数据,一个动作有几千个clip,
+            假设一个clip采样4张(因为每个clip基本不超过4秒, 每秒采样一张)图则每个动作就会有几千甚至上万张图片.
+        """
+        pool = multiprocessing.Pool(self.num_procs)
+
+        for activity_name in tqdm(self.valid_activity_names, desc=f"Activities"):
+            print(f"Processing activity: {activity_name}")
+            V = self.load_activity(activity_name)
+            
+            processed_clips_base_name = set()  # 这里因为每条clip有3个重复的video场景差不多拍摄了3条，我们只需要取其中一条即可
+            tasks = []
+            
+            for v in tqdm(V[:self.max_clip_num], desc="Clips"):
+                base_name = self.get_name_from_path(v.filename()).split('_')[0]
+                if base_name in processed_clips_base_name:
+                    continue
+
+                processed_clips_base_name.add(base_name)
+
+                is_train = self.get_name_from_path(v.filename()) not in self.train_video_names
+                tasks.append((self, activity_name, (v, is_train)))
+
+            # Use multiprocessing pool
+            results = pool.map(worker_helper, tasks)
+
+            # Collect results and update shared resources
+            for is_train, annotations in results:
+                if is_train:
+                    self.train_labels.extend(annotations)
+                else:
+                    self.val_labels.extend(annotations)
+                self.update_label_file(istrain=is_train)
+
+        pool.close()
+        pool.join()
+
+    def run(self,):
+        if self.num_procs > 1:
+            self.convert_multiprocess()
+        else:
+            self.convert()
         
+
+def get_activities_not_processed(cap_dir, lavis_dir):
+    """ Get activities not processed. """
+    cap_activity_names = os.listdir(os.path.join(cap_dir, "videos"))
+    lavis_activity_names = os.listdir(os.path.join(lavis_dir, "annotations/dense_captions"))
+    return list(set(cap_activity_names) - set(lavis_activity_names))  # 返回cap中没有被处理的动作名称列表. e.g. ['activity_1', 'activity_2']
 
 
 if __name__ == "__main__":
@@ -244,9 +359,10 @@ if __name__ == "__main__":
         cap_dir, 
         lavis_dir, 
         max_clip_num=100000,  # 每种动作采样多少个clips, 超过这个值时截断
+        num_procs=32,  # 进程数量
         valid_activity_path=valid_activity_path,  # 设置为None时默认使用所有video
     )
-    engine.convert()
+    engine.run()
     print('Done')
     print(f'lavis_dir: {lavis_dir}')
     print(f'lavis_image_dir: {lavis_dir}/images')
