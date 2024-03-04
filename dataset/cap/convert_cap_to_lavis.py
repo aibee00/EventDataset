@@ -74,9 +74,10 @@ class ConvertCapToLavis(object):
         self.sample_num_per_clip = 4  # 每个clip采样几张图片, 共145万个clips
         self.max_clip_num = max_clip_num  # 每个动作采样几个clips
 
-        self.valid_activity_names = get_activities_not_processed(
-            cap_dir, lavis_dir
-        ) #self._load_valid_activity_names(valid_activity_path)
+        # self.valid_activity_names = get_activities_not_processed(
+        #     cap_dir, lavis_dir
+        # ) 
+        self.valid_activity_names = self._load_valid_activity_names(valid_activity_path)
 
         self.num_procs = num_procs
 
@@ -252,12 +253,18 @@ class ConvertCapToLavis(object):
             annotations.append(annotation)
         return (is_train, annotations)
 
-    def update_label_file(self, istrain=True):
+    def update_label_file(self, istrain=True, activity_name=None):
         """ Save labels """
-        if istrain:
-            label_path = self.lavis_anno_dir / 'label_train_cap2lavis.json'
+        if activity_name is not None:
+            save_dir = os.path.join(self.lavis_anno_dir, 'labels', activity_name)
+            Path(save_dir).mkdir(parents=True, exist_ok=True)
         else:
-            label_path = self.lavis_anno_dir / 'label_val_cap2lavis.json'
+            save_dir = self.lavis_anno_dir
+        
+        if istrain:
+            label_path = save_dir / 'label_train_cap2lavis.json'
+        else:
+            label_path = save_dir / 'label_val_cap2lavis.json'
 
         with open(label_path, 'w', encoding='utf-8') as f:
             json.dump(self.train_labels if istrain else self.val_labels, f, indent=4, ensure_ascii=False)
@@ -334,8 +341,8 @@ class ConvertCapToLavis(object):
                     self.val_labels.extend(annotations)
             
             # save result
-            self.update_label_file(istrain=True)
-            self.update_label_file(istrain=False)
+            self.update_label_file(istrain=True, activity_name=activity_name)
+            self.update_label_file(istrain=False, activity_name=activity_name)
 
         pool.close()
         pool.join()
