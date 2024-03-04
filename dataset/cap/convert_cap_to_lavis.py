@@ -320,7 +320,7 @@ class ConvertCapToLavis(object):
 
                 processed_clips_base_name.add(base_name)
 
-                is_train = self.get_name_from_path(v.filename()) not in self.train_video_names
+                is_train = self.get_name_from_path(v.filename()) in self.train_video_names
                 tasks.append((self, activity_name, (v, is_train)))
 
             # Use multiprocessing pool
@@ -332,7 +332,10 @@ class ConvertCapToLavis(object):
                     self.train_labels.extend(annotations)
                 else:
                     self.val_labels.extend(annotations)
-                self.update_label_file(istrain=is_train)
+            
+            # save result
+            self.update_label_file(istrain=True)
+            self.update_label_file(istrain=False)
 
         pool.close()
         pool.join()
