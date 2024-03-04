@@ -350,7 +350,7 @@ class ConvertCapToLavis(object):
 def get_activities_not_processed(cap_dir, lavis_dir):
     """ Get activities not processed. """
     cap_activity_names = os.listdir(os.path.join(cap_dir, "videos"))
-    lavis_activity_names = os.listdir(os.path.join(lavis_dir, "annotations/dense_captions"))
+    lavis_activity_names = os.listdir(os.path.join(lavis_dir, "images"))
     return list(set(cap_activity_names) - set(lavis_activity_names))  # 返回cap中没有被处理的动作名称列表. e.g. ['activity_1', 'activity_2']
 
 
