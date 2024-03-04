@@ -256,10 +256,10 @@ class ConvertCapToLavis(object):
     def update_label_file(self, istrain=True, activity_name=None):
         """ Save labels """
         if activity_name is not None:
-            save_dir = os.path.join(self.lavis_anno_dir, 'labels', activity_name)
-            Path(save_dir).mkdir(parents=True, exist_ok=True)
+            save_dir = Path(self.lavis_anno_dir) / 'labels' / activity_name
+            save_dir.mkdir(parents=True, exist_ok=True)
         else:
-            save_dir = self.lavis_anno_dir
+            save_dir = Path(self.lavis_anno_dir)
         
         if istrain:
             label_path = save_dir / 'label_train_cap2lavis.json'
