@@ -74,9 +74,10 @@ class ConvertCapToLavis(object):
         self.sample_num_per_clip = 4  # 每个clip采样几张图片, 共145万个clips
         self.max_clip_num = max_clip_num  # 每个动作采样几个clips
 
-        self.valid_activity_names = get_activities_not_processed(
-            cap_dir, lavis_dir
-        ) #self._load_valid_activity_names(valid_activity_path)
+        # self.valid_activity_names = get_activities_not_processed(
+        #     cap_dir, lavis_dir
+        # ) 
+        self.valid_activity_names = self._load_valid_activity_names(valid_activity_path)
 
         self.num_procs = num_procs
 
@@ -252,12 +253,18 @@ class ConvertCapToLavis(object):
             annotations.append(annotation)
         return (is_train, annotations)
 
-    def update_label_file(self, istrain=True):
+    def update_label_file(self, istrain=True, activity_name=None):
         """ Save labels """
-        if istrain:
-            label_path = self.lavis_anno_dir / 'label_train_cap2lavis.json'
+        if activity_name is not None:
+            save_dir = Path(self.lavis_anno_dir) / 'labels' / activity_name
+            save_dir.mkdir(parents=True, exist_ok=True)
         else:
-            label_path = self.lavis_anno_dir / 'label_val_cap2lavis.json'
+            save_dir = Path(self.lavis_anno_dir)
+        
+        if istrain:
+            label_path = save_dir / 'label_train_cap2lavis.json'
+        else:
+            label_path = save_dir / 'label_val_cap2lavis.json'
 
         with open(label_path, 'w', encoding='utf-8') as f:
             json.dump(self.train_labels if istrain else self.val_labels, f, indent=4, ensure_ascii=False)
@@ -320,7 +327,7 @@ class ConvertCapToLavis(object):
 
                 processed_clips_base_name.add(base_name)
 
-                is_train = self.get_name_from_path(v.filename()) not in self.train_video_names
+                is_train = self.get_name_from_path(v.filename()) in self.train_video_names
                 tasks.append((self, activity_name, (v, is_train)))
 
             # Use multiprocessing pool
@@ -332,7 +339,10 @@ class ConvertCapToLavis(object):
                     self.train_labels.extend(annotations)
                 else:
                     self.val_labels.extend(annotations)
-                self.update_label_file(istrain=is_train)
+            
+            # save result
+            self.update_label_file(istrain=True, activity_name=activity_name)
+            self.update_label_file(istrain=False, activity_name=activity_name)
 
         pool.close()
         pool.join()
@@ -347,7 +357,7 @@ class ConvertCapToLavis(object):
 def get_activities_not_processed(cap_dir, lavis_dir):
     """ Get activities not processed. """
     cap_activity_names = os.listdir(os.path.join(cap_dir, "videos"))
-    lavis_activity_names = os.listdir(os.path.join(lavis_dir, "annotations/dense_captions"))
+    lavis_activity_names = os.listdir(os.path.join(lavis_dir, "images"))
     return list(set(cap_activity_names) - set(lavis_activity_names))  # 返回cap中没有被处理的动作名称列表. e.g. ['activity_1', 'activity_2']
 
 
